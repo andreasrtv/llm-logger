@@ -52,10 +52,19 @@ def handle_message(data):
         room=str(chat_id),
     )
 
-    llm_response = llm.query(chat_id)
+    llm_stream = llm.query(chat_id)
+
+    message = next(llm_stream)
 
     emit(
         "new_message",
-        llm_response.to_dict(),
+        message.to_dict(),
         room=str(chat_id),
     )
+
+    for chunk in llm_stream:
+        emit(
+            "new_message_stream",
+            {"text": chunk, "message_id": message.id},
+            room=str(chat_id),
+        )

@@ -96,3 +96,11 @@ def edit_user(user_id: int, **kwargs):
                 value = False
             setattr(user, key, value)
         db.session.commit()
+
+
+def edit_message(message_id: int, text: str):
+    message = Message.query.get(message_id)
+
+    if message:
+        message.text = text
+        db.session.commit()
