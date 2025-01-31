@@ -1,0 +1,39 @@
+{% if user %}
+<h1 class="text-3xl font-semibold mb-4 text-center">Chats</h1>
+<div class="flex flex-row justify-evenly">
+    <form method="POST" action="{{ url_for('edit_user') }}">
+        <label class="inline-flex items-center mb-5 cursor-pointer">
+            <input type="hidden" name="option_show_completed" value="False">
+            <input id="togge-completed" type="checkbox" value="True" class="sr-only peer" {{ "checked" if
+                user.option_show_completed }} onChange="this.form.submit()" name="option_show_completed">
+            <div
+                class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600">
+            </div>
+            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Completed</span>
+        </label>
+
+        <label class="inline-flex items-center mb-5 cursor-pointer">
+            <input type="hidden" name="option_show_all" value="False">
+            <input id="toggle-all" type="checkbox" value="True" class="sr-only peer" {{ "checked" if
+                user.option_show_all }} onChange="this.form.submit()" name="option_show_all">
+            <div
+                class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600">
+            </div>
+            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">All</span>
+        </label>
+    </form>
+</div>
+<div class="flex-1 overflow-y-auto">
+    {% for c in chats %}
+    <a href="{{ url_for('chats', chat_id=c.id) }}"
+        class="flex flex-wrap flex-col p-2 mb-2 rounded-2xl hover:bg-gray-700 {{ 'bg-zinc-900' if chat.id == c.id }}">
+        <span>{{ c.title }}</span>
+        <span class="text-xs text-slate-500">{{ c.created_at }}</span>
+        <span class="text-xs text-slate-500">{{ c.user.username }}</span>
+    </a>
+    {% endfor %}
+</div>
+<a href="{{ url_for('new_chat') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4 block">
+    New Chat
+</a>
+{% endif %}
