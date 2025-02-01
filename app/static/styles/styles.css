@@ -125,3 +125,18 @@
   background: oklch(0.552 0.016 285.938);
   border-radius: 20px;
 }
+
+.copy-btn {
+  color: white;
+  background-color: oklch(0.551 0.027 264.364); /* color-gray-500 */
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  top: 10px;
+  right: 10px;
+  position: absolute;
+}
+
+.copy-btn:hover {
+  background-color: oklch(0.373 0.034 259.733); /* color-gray-700 */
+}

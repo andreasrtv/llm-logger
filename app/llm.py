@@ -18,16 +18,16 @@ def fake_stream():
 
 # TODO: Add an editable system prompt to each chat (based on a default system prompt). Add the chat's system prompt to the conversation before sending it to the LLM.
 def query(chat_id):
-    messages = db_utils.get_messages(chat_id)
-
-    conversation = [
-        {"role": "user" if m.user_message else "assistant", "content": m.text}
-        for m in messages
-    ]
-
     if Config.USE_FAKE_LLM:
         stream = fake_stream()
     else:
+        messages = db_utils.get_messages(chat_id)
+
+        conversation = [
+            {"role": "user" if m.user_message else "assistant", "content": m.text}
+            for m in messages
+        ]
+
         stream = openai_client.chat.completions.create(
             messages=conversation, model="gpt-4o-2024-08-06", stream=True
         )

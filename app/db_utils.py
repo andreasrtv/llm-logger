@@ -65,11 +65,16 @@ def get_messages(chat_id: int) -> list[Message]:
 
 
 def create_message(chat_id: int, text: str, user_message=True) -> Message:
-    message = Message(chat_id=chat_id, user_message=user_message, text=text)
-    db.session.add(message)
-    db.session.commit()
+    chat = Chat.query.get(chat_id)
+    if chat:
+        if chat.completed:
+            raise ValueError("Can't send message to completed chat")
 
-    return message
+        message = Message(chat_id=chat_id, user_message=user_message, text=text)
+        db.session.add(message)
+        db.session.commit()
+
+        return message
 
 
 def edit_chat(chat_id: int, **kwargs):
@@ -102,5 +107,9 @@ def edit_message(message_id: int, text: str):
     message = Message.query.get(message_id)
 
     if message:
+        chat = Chat.query.get(message.chat_id)
+        if chat.completed:
+            raise ValueError("Can't edit message in completed chat")
+
         message.text = text
         db.session.commit()

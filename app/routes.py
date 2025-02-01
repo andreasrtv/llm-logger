@@ -38,7 +38,11 @@ def chats(chat_id):
 
         db_utils.edit_chat(chat_id, **form_data)
 
-        if "deleted" in form_data or "completed" in form_data:
+        if "deleted" in form_data:
+            db_utils.edit_user(current_user.id, option_show_completed=False)
+            return redirect(url_for("home"))
+        elif "completed" in form_data:
+            db_utils.edit_user(current_user.id, option_show_completed=True)
             return redirect(url_for("home"))
 
         return redirect(url_for("chats", chat_id=chat_id))

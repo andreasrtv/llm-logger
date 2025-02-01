@@ -41,7 +41,10 @@ def handle_message(data):
     chat_id = data["chat_id"]
     text = data["text"]
 
-    user_message = db_utils.create_message(chat_id, text)
+    try:
+        user_message = db_utils.create_message(chat_id, text)
+    except ValueError:
+        return False
 
     if not user_message:
         return False
