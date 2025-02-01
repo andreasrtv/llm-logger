@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Logger</title>
+    <script src="{{ url_for('static',filename='scripts/tailwind.js') }}"></script>
+
+</head>
+
+<!-- TODO: Fix stuff here. Add stuff like default system prompt, DB download/dump?, ... -->
+
+<body class="flex h-screen bg-zinc-900">
+    <a href="{{ url_for('home') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4 block">
+        Back to chats
+    </a>
+    <a href="{{ url_for('logout') }}" class="bg-red-500 text-white p-2 rounded-xl text-center mt-4 block">
+        Log Out
+    </a>
+</body>
+
+</html>

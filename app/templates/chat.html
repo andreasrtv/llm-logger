@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="flex-1 flex flex-col p-6 overflow-y-hidden bg-zinc-900">
-    <div id="message-container" class="flex-1 overflow-y-auto bg-inherit">
+    <div id="message-container" class="flex-1 overflow-y-auto bg-inherit p-2">
         {% for message in messages %}
         <div id="message-{{ message.id }}"
             class="mb-4 w-2/3 {{ 'float-right' if message.user_message else 'float-left' }} bg-zinc-700 p-4 rounded-2xl">
@@ -16,7 +16,7 @@
     <form method="POST" id="message-form" class="flex">
         <textarea id="message-input" type="text" name="message"
             class="flex-1 p-2 border rounded-2xl bg-zinc-700 text-white" rows="10" placeholder=""></textarea>
-        <button type="submit" class="ml-2 bg-gray-500 text-white p-2 rounded">Send</button>
+        <button type="submit" class="ml-2 bg-gray-500 text-white p-2 rounded hover:bg-gray-700">Send</button>
     </form>
     {% endif %}
 </div>

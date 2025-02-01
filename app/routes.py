@@ -94,6 +94,12 @@ def edit_user():
     return redirect(url_for("home"))
 
 
+@app.route("/admin")
+@login_required
+def admin():
+    return render_template("admin.html", user=current_user)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
