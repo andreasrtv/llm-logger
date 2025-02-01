@@ -1,4 +1,4 @@
-from app import db_utils, login_manager, socketio, llm
+from app import db_utils, llm, login_manager, socketio
 from flask_login import current_user
 from flask_socketio import close_room, emit, join_room, rooms
 

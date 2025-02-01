@@ -1,10 +1,10 @@
 from app import db
 from datetime import datetime
 from flask_login import UserMixin
+from sqlalchemy.sql import func
 from typing import Optional
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from sqlalchemy.sql import func
 
 
 class User(UserMixin, db.Model):

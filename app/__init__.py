@@ -5,7 +5,6 @@ from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from openai import OpenAI
-import openai
 
 app = Flask(__name__)
 app.config.from_object(Config)

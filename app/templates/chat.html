@@ -29,6 +29,31 @@
     for (const e of bubbleElements) {
         e.innerHTML = DOMPurify.sanitize(marked.parse(e.textContent));
     }
+
+    function addCopyButtons() {
+        const codeBlocks = document.querySelectorAll("pre code");
+
+        codeBlocks.forEach((codeBlock) => {
+            const button = document.createElement("button");
+            button.classList.add("copy-btn");
+            button.textContent = "Copy";
+
+            const preBlock = codeBlock.parentNode;
+            preBlock.style.position = "relative";
+            preBlock.appendChild(button);
+
+            button.addEventListener("click", () => {
+                const codeText = codeBlock.textContent || codeBlock.innerText;
+                navigator.clipboard
+                    .writeText(codeText)
+                    .then(() => { })
+                    .catch(() => { });
+            });
+        });
+    }
+
+    addCopyButtons();
+    hljs.highlightAll();
 </script>
 
 {% if not chat.completed %}

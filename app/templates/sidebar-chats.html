@@ -26,7 +26,7 @@
 
 <div class="flex-1 overflow-y-auto">
     {% for c in chats %}
-    <a href="{{ url_for('chats', chat_id=c.id) }}"
+    <a id="chat-{{ c.id }}" href="{{ url_for('chats', chat_id=c.id) }}"
         class="flex flex-wrap flex-row p-2 mb-2 rounded-2xl hover:bg-gray-700 {{ 'bg-zinc-900' if chat.id == c.id }}">
         <div class="flex flex-wrap flex-col basis-1/2">
             <span>{{ c.title }}</span>
@@ -43,4 +43,12 @@
 <a href="{{ url_for('new_chat') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4 block">
     New Chat
 </a>
+
+{% if chat %}
+<input type="hidden" id="chat-id" value="{{ chat.id }}">
+<script>
+    const chat_id = document.getElementById("chat-id").value;
+    document.getElementById(`chat-${chat_id}`).scrollIntoView();
+</script>
+{% endif %}
 {% endif %}

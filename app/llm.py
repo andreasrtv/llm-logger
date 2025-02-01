@@ -1,4 +1,4 @@
-from app import db_utils, openai_client, Config
+from app import Config, db_utils, openai_client
 from time import sleep
 
 

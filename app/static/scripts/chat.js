@@ -3,7 +3,7 @@ const socket = io.connect(window.location.origin);
 
 socket.emit("join", chatId);
 
-const sendMessage = () => {
+function sendMessage() {
   const text = document.getElementById("message-input").value;
 
   if (text.trim()) {
@@ -15,7 +15,7 @@ const sendMessage = () => {
 
     document.getElementById("message-input").value = "";
   }
-};
+}
 
 socket.on("new_message", (message) => {
   const bubbleEl = document.createElement("div");
@@ -39,6 +39,8 @@ socket.on("new_message", (message) => {
     bubbleEl.classList.remove("chat-loading");
     textEl.classList.add("markdown-content");
     textEl.innerHTML = DOMPurify.sanitize(marked.parse(message.text));
+    addCopyButtons();
+    hljs.highlightAll();
   }
 
   const dateEl = document.createElement("span");
@@ -68,8 +70,11 @@ socket.on("new_message_done", (message) => {
   const textEl = bubbleEl.querySelector("p");
   textEl.classList.add("markdown-content");
   textEl.innerHTML = DOMPurify.sanitize(marked.parse(textEl.textContent));
+  addCopyButtons();
+  hljs.highlightAll();
 
   messageContainer.scrollTop = messageContainer.scrollHeight;
+  bubbleEl.classList.add("chat-loading-done");
 });
 
 document.getElementById("message-form").onsubmit = (e) => {
@@ -83,27 +88,3 @@ document.getElementById("message-input").addEventListener("keypress", (e) => {
     sendMessage();
   }
 });
-
-function addCopyButtons() {
-  const codeBlocks = document.querySelectorAll("pre code");
-
-  codeBlocks.forEach((codeBlock) => {
-    const button = document.createElement("button");
-    button.classList.add("copy-btn");
-    button.textContent = "Copy";
-
-    const preBlock = codeBlock.parentNode;
-    preBlock.style.position = "relative";
-    preBlock.appendChild(button);
-
-    button.addEventListener("click", () => {
-      const codeText = codeBlock.textContent || codeBlock.innerText;
-      navigator.clipboard
-        .writeText(codeText)
-        .then(() => {})
-        .catch(() => {});
-    });
-  });
-}
-
-addCopyButtons();
