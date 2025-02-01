@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db_utils.get_user_by(user_id=int(user_id))
+    return db_utils.get_user_by(user_id=user_id)
 
 
 @app.route("/")
@@ -26,7 +26,7 @@ def home():
     return redirect(url_for("new_chat"))
 
 
-@app.route("/chats/<int:chat_id>", methods=["GET", "POST"])
+@app.route("/chats/<chat_id>", methods=["GET", "POST"])
 @login_required
 def chats(chat_id):
     if request.method == "POST":

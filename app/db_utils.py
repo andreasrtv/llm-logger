@@ -20,7 +20,7 @@ def get_user_by(username=None, user_id=None) -> User:
         return User.query.filter_by(username=username).first()
 
 
-def create_chat(user_id: int) -> int:
+def create_chat(user_id: str) -> str:
     chat = Chat(user_id=user_id)
     db.session.add(chat)
     db.session.commit()
@@ -36,7 +36,7 @@ def get_all_chats(deleted=False, completed=False) -> list[Chat]:
     )
 
 
-def get_own_chats(user_id: int, deleted=False, completed=False) -> list[Chat]:
+def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
         .order_by(Chat.created_at.desc())
@@ -52,7 +52,7 @@ def get_newest_chat(deleted=False, completed=False) -> Chat:
     )
 
 
-def get_own_newest_chat(user_id: int, deleted=False, completed=False) -> Chat:
+def get_own_newest_chat(user_id: str, deleted=False, completed=False) -> Chat:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
         .order_by(Chat.created_at.desc())
@@ -60,11 +60,11 @@ def get_own_newest_chat(user_id: int, deleted=False, completed=False) -> Chat:
     )
 
 
-def get_messages(chat_id: int) -> list[Message]:
+def get_messages(chat_id: str) -> list[Message]:
     return Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
 
 
-def create_message(chat_id: int, text: str, user_message=True) -> Message:
+def create_message(chat_id: str, text: str, user_message=True) -> Message:
     chat = Chat.query.get(chat_id)
     if chat:
         if chat.completed:
@@ -77,7 +77,7 @@ def create_message(chat_id: int, text: str, user_message=True) -> Message:
         return message
 
 
-def edit_chat(chat_id: int, **kwargs):
+def edit_chat(chat_id: str, **kwargs):
     chat = Chat.query.get(chat_id)
 
     if chat:
@@ -90,7 +90,7 @@ def edit_chat(chat_id: int, **kwargs):
         db.session.commit()
 
 
-def edit_user(user_id: int, **kwargs):
+def edit_user(user_id: str, **kwargs):
     user = User.query.get(user_id)
 
     if user:
@@ -103,7 +103,7 @@ def edit_user(user_id: int, **kwargs):
         db.session.commit()
 
 
-def edit_message(message_id: int, text: str):
+def edit_message(message_id: str, text: str):
     message = Message.query.get(message_id)
 
     if message:

@@ -5,7 +5,7 @@ from flask_socketio import close_room, emit, join_room, rooms
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db_utils.get_user_by(user_id=int(user_id))
+    return db_utils.get_user_by(user_id=user_id)
 
 
 @socketio.on("connect")

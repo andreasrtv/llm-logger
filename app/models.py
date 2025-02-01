@@ -2,13 +2,32 @@ from app import db
 from datetime import datetime
 from flask_login import UserMixin
 from sqlalchemy.sql import func
+from sqlalchemy.types import CHAR, TypeDecorator
 from typing import Optional
 import sqlalchemy as sa
 import sqlalchemy.orm as so
+import uuid
+
+
+class UUIDBytes(TypeDecorator):
+    impl = CHAR
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if isinstance(value, str):
+            return uuid.UUID(value).bytes
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return str(uuid.UUID(bytes=value))
+        return value
 
 
 class User(UserMixin, db.Model):
-    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    id: so.Mapped[bytes] = so.mapped_column(
+        UUIDBytes, primary_key=True, default=lambda: uuid.uuid4().bytes
+    )
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
 
@@ -22,8 +41,12 @@ class User(UserMixin, db.Model):
 
 
 class Chat(db.Model):
-    id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("user.id"), nullable=False)
+    id: so.Mapped[bytes] = so.mapped_column(
+        UUIDBytes, primary_key=True, default=lambda: uuid.uuid4().bytes
+    )
+    user_id: so.Mapped[bytes] = so.mapped_column(
+        sa.ForeignKey("user.id"), nullable=False
+    )
     title: so.Mapped[str] = so.mapped_column(
         sa.String(128), nullable=False, default="New Chat"
     )
@@ -45,8 +68,12 @@ class Chat(db.Model):
 
 
 class Message(db.Model):
-    id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    chat_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("chat.id"), nullable=False)
+    id: so.Mapped[bytes] = so.mapped_column(
+        UUIDBytes, primary_key=True, default=lambda: uuid.uuid4().bytes
+    )
+    chat_id: so.Mapped[bytes] = so.mapped_column(
+        sa.ForeignKey("chat.id"), nullable=False
+    )
     user_message: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=True)
     text: so.Mapped[str] = so.mapped_column(sa.Text, nullable=False)
     created_at: so.Mapped[datetime] = so.mapped_column(
