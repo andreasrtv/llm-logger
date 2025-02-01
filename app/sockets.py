@@ -41,30 +41,40 @@ def handle_message(data):
     chat_id = data["chat_id"]
     text = data["text"]
 
-    message = db_utils.create_message(chat_id, text)
+    user_message = db_utils.create_message(chat_id, text)
 
-    if not message:
+    if not user_message:
         return False
+
+    user_message = user_message.to_dict()
+    user_message["stream"] = False
 
     emit(
         "new_message",
-        message.to_dict(),
+        user_message,
         room=str(chat_id),
     )
 
     llm_stream = llm.query(chat_id)
 
-    message = next(llm_stream)
+    llm_message = next(llm_stream).to_dict()
+    llm_message["stream"] = True
 
     emit(
         "new_message",
-        message.to_dict(),
+        llm_message,
         room=str(chat_id),
     )
 
     for chunk in llm_stream:
         emit(
             "new_message_stream",
-            {"text": chunk, "message_id": message.id},
+            {"text": chunk, "message_id": llm_message["id"]},
             room=str(chat_id),
         )
+
+    emit(
+        "new_message_done",
+        {"message_id": llm_message["id"]},
+        room=str(chat_id),
+    )

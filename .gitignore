@@ -3,3 +3,4 @@
 *.db
 migrations
 __pycache__
+fake_response.txt
