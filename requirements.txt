@@ -4,6 +4,7 @@ Flask_Login==0.6.3
 Flask_Migrate==4.1.0
 Flask_SocketIO==5.5.1
 flask_sqlalchemy==3.1.1
+gevent==24.11.1
 openai==1.61.0
 python-dotenv==1.0.1
 SQLAlchemy==2.0.37

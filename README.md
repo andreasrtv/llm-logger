@@ -18,10 +18,14 @@ USE_FAKE_LLM=True
 ```
 If using fake LLM (debugging/testing/...), create a `fake_response.txt` file, and fill it with whatever you want.
 
+
 # Run in development
 ```bash
 flask --debug run
 ```
 
+
 # Run in production
-TODO
+```bash
+python3 run.py
+```
