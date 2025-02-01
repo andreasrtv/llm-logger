@@ -6,7 +6,6 @@ Created with the goal of logging LLM chats along with extra metadata to be used 
 ```bash
 pip install -r requirements.txt
 
-flask db init
 flask db migrate
 flask db upgrade
 ```
