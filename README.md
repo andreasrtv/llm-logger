@@ -26,6 +26,8 @@ flask --debug run
 
 
 # Run in production
+## Should not be publically exposed. Use behind VPN, such as Wireguard
+TODO: Wireguard setup
 ```bash
 python3 run.py
 ```

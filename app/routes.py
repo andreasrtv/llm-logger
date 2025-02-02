@@ -1,5 +1,5 @@
 from app import app, db_utils, login_manager
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash
 
@@ -98,6 +98,13 @@ def edit_user():
 @login_required
 def admin():
     return render_template("admin.html", user=current_user)
+
+
+@app.route("/admin/download")
+@login_required
+def download_db():
+    path = app.config["SQLALCHEMY_DATABASE_URI"].split("://")[-1]
+    return send_file(path_or_file=path)
 
 
 @app.route("/register", methods=["GET", "POST"])
