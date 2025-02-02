@@ -21,7 +21,12 @@ def get_user_by(username=None, user_id=None) -> User:
 
 
 def create_chat(user_id: str) -> str:
-    chat = Chat(user_id=user_id)
+    user = get_user_by(user_id=user_id)
+    if user.default_system_prompt:
+        chat = Chat(user_id=user_id, system_prompt=user.default_system_prompt)
+    else:
+        chat = Chat(user_id=user_id)
+
     db.session.add(chat)
     db.session.commit()
 
@@ -42,6 +47,10 @@ def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
         .order_by(Chat.created_at.desc())
         .all()
     )
+
+
+def get_chat(chat_id: str) -> Chat:
+    return Chat.query.get(chat_id)
 
 
 def get_newest_chat(deleted=False, completed=False) -> Chat:

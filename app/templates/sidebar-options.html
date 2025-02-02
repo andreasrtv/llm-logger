@@ -31,6 +31,16 @@
             disabled>Update</button>
     </form>
 
+    <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-col mb-4">
+        <label class="font-bold">System prompt</label>
+        <textarea id="message-input" type="text" name="system_prompt"
+            class="enabled-disabled p-2 border rounded-xl  bg-zinc-700 text-white" rows="4"
+            disabled>{{ chat.system_prompt if chat.system_prompt }}</textarea>
+        <button type="submit"
+            class="enabled-disabled bg-gray-500 text-white p-2 rounded-xl  text-center hover:bg-gray-700"
+            disabled>Update</button>
+    </form>
+
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-col mb-4"
         onsubmit="return confirm('Are you sure you want to complete this chat?');">
         <input type="hidden" name="completed" value="True">

@@ -34,6 +34,8 @@ class User(UserMixin, db.Model):
     option_show_completed: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
     option_show_all: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
 
+    default_system_prompt: so.Mapped[str] = so.mapped_column(sa.Text, nullable=True)
+
     chats = so.relationship("Chat", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -57,6 +59,8 @@ class Chat(db.Model):
     notes: so.Mapped[str] = so.mapped_column(sa.Text, nullable=True)
     deleted: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
     completed: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+
+    system_prompt: so.Mapped[str] = so.mapped_column(sa.Text, nullable=True)
 
     user = so.relationship("User", back_populates="chats")
     messages = so.relationship(

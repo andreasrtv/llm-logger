@@ -16,14 +16,19 @@ def fake_stream():
         sleep(0.01)
 
 
-# TODO: Add an editable system prompt to each chat (based on a default system prompt). Add the chat's system prompt to the conversation before sending it to the LLM.
 def query(chat_id):
     if Config.USE_FAKE_LLM:
         stream = fake_stream()
     else:
+        conversation = []
+
+        chat = db_utils.get_chat(chat_id)
         messages = db_utils.get_messages(chat_id)
 
-        conversation = [
+        if chat.system_prompt:
+            conversation.append({"role": "system", "content": chat.system_prompt})
+
+        conversation += [
             {"role": "user" if m.user_message else "assistant", "content": m.text}
             for m in messages
         ]
