@@ -1,7 +1,6 @@
 const chatId = document.getElementById("chat-id").value;
+const messageContainer = document.getElementById("message-container");
 const socket = io.connect(window.location.origin);
-
-socket.emit("join", chatId);
 
 function sendMessage() {
   const text = document.getElementById("message-input").value;
@@ -17,66 +16,6 @@ function sendMessage() {
   }
 }
 
-socket.on("new_message", (message) => {
-  const bubbleEl = document.createElement("div");
-  bubbleEl.id = `message-${message.id}`;
-  bubbleEl.classList.add(
-    message.user_message ? "float-right" : "float-left",
-    "mb-4",
-    "w-2/3",
-    "bg-zinc-700",
-    "p-4",
-    "rounded-2xl",
-    "chat-loading"
-  );
-
-  const textEl = document.createElement("p");
-  textEl.classList.add("text-white", "whitespace-pre-wrap");
-
-  if (message.stream) {
-    textEl.textContent = message.text;
-  } else {
-    bubbleEl.classList.remove("chat-loading");
-    textEl.classList.add("markdown-content");
-    textEl.innerHTML = DOMPurify.sanitize(marked.parse(message.text));
-    addCopyButtons();
-    hljs.highlightAll();
-  }
-
-  const dateEl = document.createElement("span");
-  dateEl.classList.add("text-xs", "text-slate-500");
-  dateEl.textContent = message.created_at;
-
-  bubbleEl.appendChild(textEl);
-  bubbleEl.appendChild(dateEl);
-  messageContainer.appendChild(bubbleEl);
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
-});
-
-socket.on("new_message_stream", (chunk) => {
-  const bubbleEl = document.getElementById(`message-${chunk.message_id}`);
-  const textEl = bubbleEl.querySelector("p");
-
-  textEl.textContent += chunk.text;
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
-});
-
-socket.on("new_message_done", (message) => {
-  const bubbleEl = document.getElementById(`message-${message.message_id}`);
-  bubbleEl.classList.remove("chat-loading");
-
-  const textEl = bubbleEl.querySelector("p");
-  textEl.classList.add("markdown-content");
-  textEl.innerHTML = DOMPurify.sanitize(marked.parse(textEl.textContent));
-  addCopyButtons();
-  hljs.highlightAll();
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
-  bubbleEl.classList.add("chat-loading-done");
-});
-
 document.getElementById("message-form").onsubmit = (e) => {
   e.preventDefault();
   sendMessage();
@@ -87,4 +26,71 @@ document.getElementById("message-input").addEventListener("keypress", (e) => {
     e.preventDefault();
     sendMessage();
   }
+});
+
+function newMessage(message) {
+  const bubble = document.createElement("div");
+  bubble.id = `message-${message.id}`;
+  bubble.classList.add(
+    message.user_message ? "float-right" : "float-left",
+    "mb-4",
+    "w-2/3",
+    "bg-zinc-700",
+    "p-4",
+    "rounded-2xl",
+    "chat-loading",
+    "relative"
+  );
+
+  const text = document.createElement("span");
+  text.classList.add("text-white", "whitespace-pre-wrap");
+  text.textContent = message.text;
+
+  const date = document.createElement("span");
+  date.classList.add("text-xs", "text-slate-500");
+  date.textContent = message.created_at;
+
+  bubble.appendChild(text);
+  bubble.appendChild(date);
+  messageContainer.appendChild(bubble);
+
+  if (!message.stream) {
+    messageDone(bubble);
+  }
+}
+
+function messageDone(bubble) {
+  bubble.classList.remove("chat-loading");
+
+  const text = bubble.querySelector("span");
+  text.classList.add("markdown-content");
+  text.innerHTML = DOMPurify.sanitize(marked.parse(text.textContent));
+
+  document.querySelectorAll(`#${bubble.id} pre code`).forEach((el) => {
+    addCopyButton(el);
+    hljs.highlightElement(el);
+  });
+}
+
+socket.emit("join", chatId);
+
+socket.on("new_message", (message) => {
+  newMessage(message);
+
+  messageContainer.scrollTop = messageContainer.scrollHeight;
+});
+
+socket.on("new_message_stream", (chunk) => {
+  const text = document.querySelector(`#message-${chunk.message_id} span`);
+  text.textContent += chunk.text;
+
+  messageContainer.scrollTop = messageContainer.scrollHeight;
+});
+
+socket.on("new_message_done", (message) => {
+  const bubble = document.getElementById(`message-${message.message_id}`);
+  messageDone(bubble);
+
+  messageContainer.scrollTop = messageContainer.scrollHeight;
+  bubble.classList.add("chat-loading-done");
 });

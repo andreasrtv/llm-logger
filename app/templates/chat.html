@@ -5,7 +5,7 @@
     <div id="message-container" class="flex-1 overflow-y-auto bg-inherit p-2">
         {% for message in messages %}
         <div id="message-{{ message.id }}"
-            class="mb-4 w-2/3 {{ 'float-right' if message.user_message else 'float-left' }} bg-zinc-700 p-4 rounded-2xl">
+            class="mb-4 w-2/3 {{ 'float-right' if message.user_message else 'float-left' }} bg-zinc-700 p-4 rounded-2xl relative">
             <div class="markdown-content text-white whitespace-pre-wrap">{{ message.text }}</div>
             <span class="text-xs text-slate-500">{{ message.created_at }}</span>
         </div>
@@ -24,36 +24,32 @@
 <input type="hidden" id="chat-id" value="{{ chat.id }}">
 
 <script>
-    const messageContainer = document.getElementById("message-container");
-    const bubbleElements = document.getElementsByClassName("markdown-content");
-    for (const e of bubbleElements) {
-        e.innerHTML = DOMPurify.sanitize(marked.parse(e.textContent));
-    }
+    function addCopyButton(codeBlock) {
+        const button = document.createElement("button");
+        button.classList.add("copy-btn");
+        button.textContent = "Copy";
 
-    function addCopyButtons() {
-        const codeBlocks = document.querySelectorAll("pre code");
+        const preBlock = codeBlock.parentNode;
+        preBlock.style.position = "relative";
+        preBlock.appendChild(button);
 
-        codeBlocks.forEach((codeBlock) => {
-            const button = document.createElement("button");
-            button.classList.add("copy-btn");
-            button.textContent = "Copy";
-
-            const preBlock = codeBlock.parentNode;
-            preBlock.style.position = "relative";
-            preBlock.appendChild(button);
-
-            button.addEventListener("click", () => {
-                const codeText = codeBlock.textContent || codeBlock.innerText;
-                navigator.clipboard
-                    .writeText(codeText)
-                    .then(() => { })
-                    .catch(() => { });
-            });
+        button.addEventListener("click", () => {
+            const codeText = codeBlock.textContent || codeBlock.innerText;
+            navigator.clipboard
+                .writeText(codeText)
+                .then(() => { })
+                .catch(() => { });
         });
     }
 
-    addCopyButtons();
-    hljs.highlightAll();
+    document.querySelectorAll(".markdown-content").forEach((el) => {
+        el.innerHTML = DOMPurify.sanitize(marked.parse(el.textContent));
+    });
+
+    document.querySelectorAll("pre code").forEach((el) => {
+        addCopyButton(el);
+        hljs.highlightElement(el);
+    });
 </script>
 
 {% if not chat.completed %}

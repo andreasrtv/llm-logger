@@ -21,8 +21,6 @@ login_manager.login_view = "login"
 
 socketio = SocketIO(app, async_mode="gevent")
 
-openai_client = OpenAI(
-    api_key=app.config["OPENAI_API_KEY"]
-)
+openai_client = OpenAI(api_key=app.config["OPENAI_API_KEY"])
 
 from app import db_utils, models, routes, sockets, llm

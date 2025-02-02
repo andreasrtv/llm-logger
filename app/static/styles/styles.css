@@ -44,7 +44,6 @@
 .markdown-content pre {
   background-color: oklch(0.21 0.034 264.665); /* color-gray-900 */
   color: oklch(0.967 0.003 264.542); /* color-gray-100 */
-  padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
 }
