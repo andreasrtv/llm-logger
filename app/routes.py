@@ -36,7 +36,10 @@ def chats(chat_id):
             key: value for key, value in form_data.items() if value is not None
         }
 
-        db_utils.edit_chat(chat_id, **form_data)
+        try:
+            db_utils.edit_chat(chat_id, **form_data)
+        except ValueError as e:
+            flash(str(e))
 
         if "deleted" in form_data:
             db_utils.edit_user(current_user.id, option_show_completed=False)
@@ -90,6 +93,13 @@ def edit_user():
     form_data = {key: value for key, value in form_data.items() if value is not None}
 
     db_utils.edit_user(current_user.id, **form_data)
+
+    if "option_show_completed" in form_data:
+        if not db_utils.get_own_chats(
+            current_user.id, completed=current_user.option_show_completed
+        ):
+            db_utils.edit_user(current_user.id, option_show_completed=False)
+            flash("No completed chats to show")
 
     return redirect(url_for("home"))
 

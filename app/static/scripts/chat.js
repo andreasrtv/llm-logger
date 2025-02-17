@@ -48,7 +48,7 @@ function newMessage(message) {
 
   const date = document.createElement("span");
   date.classList.add("text-xs", "text-slate-500");
-  date.textContent = message.created_at;
+  date.textContent = moment().calendar(message.created_at);
 
   bubble.appendChild(text);
   bubble.appendChild(date);

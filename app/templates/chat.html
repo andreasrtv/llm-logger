@@ -7,7 +7,7 @@
         <div id="message-{{ message.id }}"
             class="mb-4 w-2/3 {{ 'float-right' if message.user_message else 'float-left' }} bg-zinc-700 p-4 rounded-2xl relative">
             <div class="markdown-content text-white whitespace-pre-wrap">{{ message.text }}</div>
-            <span class="text-xs text-slate-500">{{ message.created_at }}</span>
+            <span class="text-xs text-slate-500">{{ moment(message.created_at).calendar() }}</span>
         </div>
         {% endfor %}
     </div>

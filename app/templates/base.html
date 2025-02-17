@@ -19,18 +19,46 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
         integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ=="
         crossorigin="anonymous"></script>
+    {{ moment.include_moment() }}
+    {{ moment.locale("en-gb") }}
 </head>
 
 <body class="flex h-screen bg-zinc-900">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="absolute left-1/2 top-20 transform -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
+        {% for message in messages %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between gap-2"
+            role="alert">
+            <strong class="font-bold">Error</strong>
+            <span class="block sm:inline">{{ message[1] }}</span>
+            <span class="cursor-pointer" onclick="this.parentElement.remove();">
+                <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20">
+                    <title>Close</title>
+                    <path
+                        d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z" />
+                </svg>
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if user %}
     <div class="w-96 bg-zinc-950 text-white p-4 h-full flex flex-col">
         {% include "sidebar-chats.html" %}
     </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
 
+    {% if chats %}
     <div class="w-96 bg-zinc-950 text-white p-4 h-full flex flex-col">
         {% include "sidebar-options.html" %}
     </div>
+    {% endif %}
 </body>
 
 </html>

@@ -90,12 +90,21 @@ def edit_chat(chat_id: str, **kwargs):
     chat = Chat.query.get(chat_id)
 
     if chat:
+        if (
+            "system_prompt" in kwargs
+            and Message.query.filter_by(chat_id=chat_id).count() != 0
+        ):
+            raise ValueError(
+                "The system prompt can't be changed after the chat has started"
+            )
+
         for key, value in kwargs.items():
             if value == "True":
                 value = True
             elif value == "False":
                 value = False
             setattr(chat, key, value)
+
         db.session.commit()
 
 
