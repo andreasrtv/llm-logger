@@ -30,11 +30,14 @@ def home():
 @login_required
 def chats(chat_id):
     if request.method == "POST":
-        form_data = request.form.to_dict()
-
         form_data = {
-            key: value for key, value in form_data.items() if value is not None
+            key: (
+                value.lower() == "true" if value.lower() in ["true", "false"] else value
+            )
+            for key, value in request.form.to_dict().items()
         }
+
+        print(form_data)
 
         try:
             db_utils.edit_chat(chat_id, **form_data)
@@ -60,14 +63,16 @@ def chats(chat_id):
         current_chat = next((chat for chat in chats if chat.id == chat_id), None)
 
         if current_chat:
-            messages = db_utils.get_messages(chat_id)
-
             return render_template(
                 "chat.html",
                 chats=chats,
                 chat=current_chat,
-                messages=messages,
+                messages=current_chat.messages,
                 user=current_user,
+                tags=sorted(
+                    list(set(db_utils.get_tags()) - set(current_chat.tags)),
+                    key=lambda t: t.text.lower(),
+                ),
             )
         elif not current_chat and current_user.option_show_completed:
             db_utils.edit_user(current_user.id, option_show_completed=False)
@@ -87,10 +92,13 @@ def new_chat():
 @login_required
 def edit_user():
     form_data = {
-        key: max(values) for key, values in request.form.to_dict(flat=False).items()
+        key: (
+            max(value).lower() == "true"
+            if max(value).lower() in ["true", "false"]
+            else max(value)
+        )
+        for key, value in request.form.to_dict(flat=False).items()
     }
-
-    form_data = {key: value for key, value in form_data.items() if value is not None}
 
     db_utils.edit_user(current_user.id, **form_data)
 
@@ -102,6 +110,17 @@ def edit_user():
             flash("No completed chats to show")
 
     return redirect(url_for("home"))
+
+
+@app.route("/admin/tags", methods=["GET", "POST"])
+@login_required
+def tags():
+    if request.method == "POST":
+        text = request.form["text"]
+        if text:
+            db_utils.create_tag(text)
+
+    return redirect(url_for("admin"))
 
 
 @app.route("/admin")

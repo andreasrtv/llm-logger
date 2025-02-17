@@ -1,5 +1,5 @@
 from app import db
-from app.models import Chat, Message, User
+from app.models import Chat, Message, User, Tag
 from werkzeug.security import generate_password_hash
 
 
@@ -20,8 +20,18 @@ def get_user_by(username=None, user_id=None) -> User:
         return User.query.filter_by(username=username).first()
 
 
+def edit_user(user_id: str, **kwargs):
+    user = User.query.get(user_id)
+
+    if user:
+        for key, value in kwargs.items():
+            setattr(user, key, value)
+        db.session.commit()
+
+
 def create_chat(user_id: str) -> str:
     user = get_user_by(user_id=user_id)
+
     if user.default_system_prompt:
         chat = Chat(user_id=user_id, system_prompt=user.default_system_prompt)
     else:
@@ -49,10 +59,6 @@ def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
     )
 
 
-def get_chat(chat_id: str) -> Chat:
-    return Chat.query.get(chat_id)
-
-
 def get_newest_chat(deleted=False, completed=False) -> Chat:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed)
@@ -69,21 +75,8 @@ def get_own_newest_chat(user_id: str, deleted=False, completed=False) -> Chat:
     )
 
 
-def get_messages(chat_id: str) -> list[Message]:
-    return Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
-
-
-def create_message(chat_id: str, text: str, user_message=True) -> Message:
-    chat = Chat.query.get(chat_id)
-    if chat:
-        if chat.completed:
-            raise ValueError("Can't send message to completed chat")
-
-        message = Message(chat_id=chat_id, user_message=user_message, text=text)
-        db.session.add(message)
-        db.session.commit()
-
-        return message
+def get_chat(chat_id: str) -> Chat:
+    return Chat.query.get(chat_id)
 
 
 def edit_chat(chat_id: str, **kwargs):
@@ -99,26 +92,29 @@ def edit_chat(chat_id: str, **kwargs):
             )
 
         for key, value in kwargs.items():
-            if value == "True":
-                value = True
-            elif value == "False":
-                value = False
-            setattr(chat, key, value)
+            if key == "tag":
+                tag = Tag.query.filter_by(text=value).first()
+                if tag:
+                    chat.tags.append(tag)
+                else:
+                    raise ValueError(f"Tag '{value}' does not exist")
+            else:
+                setattr(chat, key, value)
 
         db.session.commit()
 
 
-def edit_user(user_id: str, **kwargs):
-    user = User.query.get(user_id)
+def create_message(chat_id: str, text: str, user_message=True) -> Message:
+    chat = Chat.query.get(chat_id)
+    if chat:
+        if chat.completed:
+            raise ValueError("Can't send message to completed chat")
 
-    if user:
-        for key, value in kwargs.items():
-            if value == "True":
-                value = True
-            elif value == "False":
-                value = False
-            setattr(user, key, value)
+        message = Message(chat_id=chat_id, user_message=user_message, text=text)
+        db.session.add(message)
         db.session.commit()
+
+        return message
 
 
 def edit_message(message_id: str, text: str):
@@ -131,3 +127,14 @@ def edit_message(message_id: str, text: str):
 
         message.text = text
         db.session.commit()
+
+
+def get_tags() -> list[Tag]:
+    return Tag.query.all()
+
+
+def create_tag(text: str):
+    tag = Tag(text=text)
+
+    db.session.add(tag)
+    db.session.commit()

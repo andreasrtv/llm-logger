@@ -23,7 +23,7 @@ def query(chat_id):
         conversation = []
 
         chat = db_utils.get_chat(chat_id)
-        messages = db_utils.get_messages(chat_id)
+        messages = chat.messages
 
         if chat.system_prompt:
             conversation.append({"role": "system", "content": chat.system_prompt})

@@ -24,6 +24,14 @@ class UUIDBytes(TypeDecorator):
         return value
 
 
+chat_tags = db.Table(
+    "chat_tags",
+    db.Model.metadata,
+    sa.Column("chat_id", sa.ForeignKey("chat.id"), primary_key=True),
+    sa.Column("tag_id", sa.ForeignKey("tag.id"), primary_key=True),
+)
+
+
 class User(UserMixin, db.Model):
     id: so.Mapped[bytes] = so.mapped_column(
         UUIDBytes, primary_key=True, default=lambda: uuid.uuid4().bytes
@@ -66,6 +74,9 @@ class Chat(db.Model):
     messages = so.relationship(
         "Message", back_populates="chat", cascade="all, delete-orphan"
     )
+    tags: so.Mapped[Optional[list["Tag"]]] = so.relationship(
+        "Tag", secondary=chat_tags, back_populates="chats"
+    )
 
     def __repr__(self):
         return f"<Chat {self.title} (User {self.user_id})>"
@@ -93,5 +104,18 @@ class Message(db.Model):
         d = {
             column.name: getattr(self, column.name) for column in self.__table__.columns
         }
-        d["created_at"] = d["created_at"].isoformat().replace("T", " ")
+        d["created_at"] = d["created_at"].isoformat()
+
         return d
+
+
+class Tag(db.Model):
+    id: so.Mapped[bytes] = so.mapped_column(
+        UUIDBytes, primary_key=True, default=lambda: uuid.uuid4().bytes
+    )
+    text: so.Mapped[str] = so.mapped_column(sa.String(64), nullable=False, unique=True)
+
+    chats = so.relationship("Chat", secondary=chat_tags, back_populates="tags")
+
+    def __repr__(self):
+        return f"<Tag {self.text}>"
