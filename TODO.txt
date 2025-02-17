@@ -1,0 +1,10 @@
+TODOs in no particular order:
+- Chat tagging
+    - Predefined tags to help ourselves later
+    - For example: the type of scenario, "important", "irrelevant", ...
+    - Not to be added through UI. If/when necessary will be added directly to the DB manually (to prevent overuse)
+- Forking chats
+    - Tree stucture. Each message points to its parent
+    - Fork button/icon on each AI message (to create fork)
+    - Arrows to switch between forks
+- Disallow editing system prompt after first message
