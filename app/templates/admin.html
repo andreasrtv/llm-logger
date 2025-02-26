@@ -1,40 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Logger</title>
-    <script src="{{ url_for('static',filename='scripts/tailwind.js') }}"></script>
+{% block content %}
+<div class="flex-1 flex items-center flex-col p-6 overflow-y-hidden bg-zinc-900">
+    <h1 class="text-3xl font-semibold mb-4 text-center text-white">Admin Panel</h1>
 
-</head>
+    <form method="POST" action="{{ url_for('edit_user') }}" class="flex flex-col mb-4 w-1/5">
+        <label class="font-bold text-white">System prompt</label>
+        <textarea id="message-input" type="text" name="default_system_prompt"
+            class="p-2 border rounded-xl  bg-zinc-700 text-white"
+            rows="4">{{ user.default_system_prompt if user.default_system_prompt }}</textarea>
+        <button type="submit"
+            class="bg-gray-500 text-white p-2 rounded-xl  text-center hover:bg-gray-700">Update</button>
+    </form>
 
-<body class="h-screen bg-zinc-900">
-    <div class="flex flex-col w-1/4">
-        <a href="{{ url_for('home') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4">
-            Back to chats
-        </a>
-        <a href="{{ url_for('download_db') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4">
-            Download Database
-        </a>
-        <a href="{{ url_for('logout') }}" class="bg-red-500 text-white p-2 rounded-xl text-center mt-4">
-            Log Out
-        </a>
-        <form method="POST" action="{{ url_for('edit_user') }}" class="flex flex-col mb-4">
-            <label class="font-bold text-white">System prompt</label>
-            <textarea id="message-input" type="text" name="default_system_prompt"
-                class="p-2 border rounded-xl  bg-zinc-700 text-white"
-                rows="4">{{ user.default_system_prompt if user.default_system_prompt }}</textarea>
-            <button type="submit"
-                class="bg-gray-500 text-white p-2 rounded-xl  text-center hover:bg-gray-700">Update</button>
-        </form>
-        <form method="POST" action="{{ url_for('tags') }}" class="flex flex-col mb-4">
-            <label class="font-bold text-white">Tag</label>
-            <input name="text" type="text" class="p-2 border rounded-xl bg-zinc-700 text-white"></input>
-            <button type="submit" class="bg-gray-500 text-white p-2 rounded-xl  text-center hover:bg-gray-700">Add
-                tag</button>
-        </form>
-    </div>
-</body>
+    <form method="POST" action="{{ url_for('tags') }}" class="flex flex-col mb-4 ">
+        <label class="font-bold text-white">Tag</label>
+        <input name="text" type="text" class="p-2 border rounded-xl bg-zinc-700 text-white"></input>
+        <button type="submit" class="bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700">Add
+            tag</button>
+    </form>
 
-</html>
+    <a href="{{ url_for('download_db') }}" class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4">
+        Download Database
+    </a>
+
+    <a href="{{ url_for('logout') }}" class="bg-red-500 text-white p-2 rounded-xl text-center mt-4">
+        Log Out
+    </a>
+</div>
+{% endblock %}

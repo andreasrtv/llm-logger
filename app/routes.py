@@ -118,15 +118,27 @@ def tags():
     if request.method == "POST":
         text = request.form["text"]
         if text:
-            db_utils.create_tag(text)
+            try:
+                db_utils.create_tag(text)
+            except Exception as e:
+                if type(e).__qualname__ == "IntegrityError":
+                    flash("Tag already exists")
+                    return redirect(url_for("admin"))
 
-    return redirect(url_for("admin"))
+    return redirect(url_for("home"))
 
 
 @app.route("/admin")
 @login_required
 def admin():
-    return render_template("admin.html", user=current_user)
+    if current_user.option_show_all:
+        chats = db_utils.get_all_chats(completed=current_user.option_show_completed)
+    else:
+        chats = db_utils.get_own_chats(
+            current_user.id, completed=current_user.option_show_completed
+        )
+
+    return render_template("admin.html", chats=chats, user=current_user)
 
 
 @app.route("/admin/download")
