@@ -1,6 +1,6 @@
 # LLM Logger
 ### Interface for conversing with an LLM
-Created with the goal of logging LLM chats along with extra metadata to be used in research.
+Created with the goal of logging LLM chats along with extra metadata. To be used in our bachelor thesis.
 
 # Setup
 ```bash
@@ -19,15 +19,13 @@ USE_FAKE_LLM=True
 If using fake LLM (debugging/testing/...), create a `fake_response.txt` file, and fill it with whatever you want.
 
 
-# Run in development
+# Development
 ```bash
 flask --debug run
 ```
 
 
-# Run in production
-## Should not be publically exposed. Use behind VPN, such as Wireguard
-TODO: Wireguard setup
-```bash
-python3 run.py
-```
+# Running
+Use [run.py](./run.py) to run web server in production mode.
+
+See the [infra](./infra/README.md) folder for notes regarding our setup.
