@@ -1,5 +1,6 @@
 .vscode
 __pycache__/
+.venv/
 
 fake_response.txt
 .env
