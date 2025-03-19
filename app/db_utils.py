@@ -104,13 +104,17 @@ def edit_chat(chat_id: str, **kwargs):
         db.session.commit()
 
 
-def create_message(chat_id: str, text: str, user_message=True) -> Message:
+def create_message(
+    chat_id: str, text: str, user_message=True, parent_id=None
+) -> Message:
     chat = Chat.query.get(chat_id)
     if chat:
         if chat.completed:
             raise ValueError("Can't send message to completed chat")
 
-        message = Message(chat_id=chat_id, user_message=user_message, text=text)
+        message = Message(
+            chat_id=chat_id, user_message=user_message, text=text, parent_id=parent_id
+        )
         db.session.add(message)
         db.session.commit()
 

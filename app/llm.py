@@ -16,13 +16,13 @@ def fake_stream():
         sleep(0.01)
 
 
-def query(chat_id):
+def query(user_message):
     if Config.USE_FAKE_LLM:
         stream = fake_stream()
     else:
         conversation = []
 
-        chat = db_utils.get_chat(chat_id)
+        chat = db_utils.get_chat(user_message["chat_id"])
         messages = chat.messages
 
         if chat.system_prompt:
@@ -38,9 +38,14 @@ def query(chat_id):
         )
 
     chunk = next(stream)
-
     response = chunk.choices[0].delta.content
-    new_message = db_utils.create_message(chat_id, response, user_message=False)
+
+    new_message = db_utils.create_message(
+        user_message["chat_id"],
+        response,
+        user_message=False,
+        parent_id=user_message["id"],
+    )
 
     yield new_message
 

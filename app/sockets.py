@@ -40,9 +40,10 @@ def handle_message(data):
 
     chat_id = data["chat_id"]
     text = data["text"]
+    parent_id = data.get("parent_id", None)
 
     try:
-        user_message = db_utils.create_message(chat_id, text)
+        user_message = db_utils.create_message(chat_id, text, parent_id=parent_id)
     except ValueError:
         return False
 
@@ -58,7 +59,7 @@ def handle_message(data):
         room=str(chat_id),
     )
 
-    llm_stream = llm.query(chat_id)
+    llm_stream = llm.query(user_message)
 
     llm_message = next(llm_stream).to_dict()
     llm_message["stream"] = True

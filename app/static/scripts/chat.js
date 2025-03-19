@@ -3,13 +3,21 @@ const messageContainer = document.getElementById("message-container");
 const socket = io.connect(window.location.origin);
 
 function sendMessage() {
+  const parent = document.querySelector("#message-container >div:last-child");
   const text = document.getElementById("message-input").value;
+
+  let parent_id = null;
+
+  if (parent) {
+    parent_id = parent.id.slice(8);
+  }
 
   if (text.trim()) {
     socket.emit("send_message", {
       chat_id: chatId,
       sender: "user",
       text: text,
+      parent_id: parent_id,
     });
 
     document.getElementById("message-input").value = "";

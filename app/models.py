@@ -94,8 +94,26 @@ class Message(db.Model):
     created_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime, default=func.now(), nullable=False
     )
+    parent_id: so.Mapped[Optional[bytes]] = so.mapped_column(
+        sa.ForeignKey("message.id"), nullable=True
+    )
 
     chat = so.relationship("Chat", back_populates="messages")
+
+    parent = so.relationship(
+        "Message",
+        remote_side=[id],
+        back_populates="children",
+        uselist=False,
+        post_update=True,
+    )
+
+    children = so.relationship(
+        "Message",
+        back_populates="parent",
+        uselist=True,
+        post_update=True,
+    )
 
     def __repr__(self):
         return f"<Message {self.id} (Chat {self.chat_id})>"
