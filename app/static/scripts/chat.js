@@ -60,6 +60,11 @@ function newMessage(message) {
 
   bubble.appendChild(text);
   bubble.appendChild(date);
+
+  if (message.user_message) {
+    addForkButton(bubble);
+  }
+
   messageContainer.appendChild(bubble);
 
   if (!message.stream) {

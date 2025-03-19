@@ -1,6 +1,7 @@
 from app import db
-from app.models import Chat, Message, User, Tag
+from app.models import Chat, Message, Tag, User
 from werkzeug.security import generate_password_hash
+import uuid
 
 
 def create_user(username: str, password: str) -> User:
@@ -142,3 +143,82 @@ def create_tag(text: str):
 
     db.session.add(tag)
     db.session.commit()
+
+
+def get_branch_messages(message_id: str) -> list[Message]:
+    selected_id = uuid.UUID(message_id).bytes.hex().upper()
+
+    up_base = db.select(
+        Message.id,
+        Message.parent_id,
+        Message.text,
+        Message.created_at,
+        Message.user_message,
+        db.literal(0).label("depth"),
+    ).where(db.func.hex(Message.id) == selected_id)
+
+    up_branch = up_base.cte(name="up_branch", recursive=True)
+
+    up_recursive = db.select(
+        Message.id,
+        Message.parent_id,
+        Message.text,
+        Message.created_at,
+        Message.user_message,
+        (up_branch.c.depth + 1).label("depth"),
+    ).select_from(db.join(Message, up_branch, Message.id == up_branch.c.parent_id))
+
+    up_branch = up_branch.union_all(up_recursive)
+
+    down_base = db.select(
+        Message.id,
+        Message.parent_id,
+        db.literal(0).label("depth"),
+    ).where(db.func.hex(Message.id) == selected_id)
+
+    down_branch = down_base.cte(name="down_branch", recursive=True)
+
+    child_subq = (
+        db.select(Message.id)
+        .where(Message.parent_id == down_branch.c.id)
+        .order_by(Message.created_at.asc())
+        .limit(1)
+        .correlate(down_branch)
+        .scalar_subquery()
+    )
+
+    down_recursive = db.select(
+        Message.id,
+        Message.parent_id,
+        (down_branch.c.depth + 1).label("depth"),
+    ).where(Message.id == child_subq.scalar_subquery())
+
+    down_branch = down_branch.union_all(down_recursive)
+
+    max_depth_cte = db.select(db.func.max(up_branch.c.depth).label("d")).cte(
+        "max_depth"
+    )
+
+    up_query = db.select(
+        up_branch.c.id,
+        up_branch.c.parent_id,
+        (max_depth_cte.c.d - up_branch.c.depth).label("ordering"),
+    ).select_from(db.join(up_branch, max_depth_cte, db.literal(True)))
+
+    down_query = (
+        db.select(
+            down_branch.c.id,
+            down_branch.c.parent_id,
+            (max_depth_cte.c.d + down_branch.c.depth).label("ordering"),
+        )
+        .select_from(db.join(down_branch, max_depth_cte, db.literal(True)))
+        .where(down_branch.c.depth > 0)
+    )
+
+    final_query = db.union_all(up_query, down_query).order_by(
+        db.literal_column("ordering")
+    )
+
+    results = db.session.query(Message).from_statement(final_query).all()
+
+    return results

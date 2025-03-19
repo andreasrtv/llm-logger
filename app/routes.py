@@ -37,8 +37,6 @@ def chats(chat_id):
             for key, value in request.form.to_dict().items()
         }
 
-        print(form_data)
-
         try:
             db_utils.edit_chat(chat_id, **form_data)
         except ValueError as e:
@@ -63,11 +61,16 @@ def chats(chat_id):
         current_chat = next((chat for chat in chats if chat.id == chat_id), None)
 
         if current_chat:
+            if len(current_chat.messages) != 0:
+                messages = db_utils.get_branch_messages(current_chat.messages[0].id)
+            else:
+                messages = []
+
             return render_template(
                 "chat.html",
                 chats=chats,
                 chat=current_chat,
-                messages=current_chat.messages,
+                messages=messages,
                 user=current_user,
                 tags=sorted(
                     list(set(db_utils.get_tags()) - set(current_chat.tags)),
