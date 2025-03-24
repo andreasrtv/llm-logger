@@ -146,14 +146,60 @@ def create_tag(text: str):
 
 
 def get_branch_messages(message_id: str) -> list[Message]:
+    """
+    WITH recursive up_branch(id, parent_id, depth) AS (
+        SELECT message.id        AS id,
+                message.parent_id AS parent_id,
+                0                 AS depth
+        FROM   message
+        WHERE  hex(message.id) = :selected_id
+        UNION ALL
+        SELECT message.id          AS id,
+                message.parent_id   AS parent_id,
+                up_branch.depth + 1 AS depth
+        FROM   message
+        JOIN   up_branch
+        ON     message.id = up_branch.parent_id), max_depth AS (
+        SELECT max(up_branch.depth) AS d
+        FROM   up_branch), down_branch(id, parent_id, depth) AS (
+        SELECT message.id        AS id,
+                message.parent_id AS parent_id,
+                0                 AS depth
+        FROM   message
+        WHERE  hex(message.id) = :selected_id
+        UNION ALL
+        SELECT message.id            AS id,
+                message.parent_id     AS parent_id,
+                down_branch.depth + 1 AS depth
+        FROM   message
+        JOIN   down_branch
+        ON     message.id = (
+                        SELECT   message.id
+                        FROM     message
+                        WHERE    message.parent_id = down_branch.id
+                        ORDER BY message.created_at ASC limit 1))
+    SELECT up_branch.id,
+           up_branch.parent_id,
+           max_depth.d - up_branch.depth AS ordering
+    FROM   up_branch
+    JOIN   max_depth
+    ON     true
+    UNION ALL
+    SELECT   down_branch.id,
+             down_branch.parent_id,
+             max_depth.d + down_branch.depth AS ordering
+    FROM     down_branch
+    JOIN     max_depth
+    ON       true
+    WHERE    down_branch.depth > 0
+    ORDER BY ordering
+    """
+
     selected_id = uuid.UUID(message_id).bytes.hex().upper()
 
     up_base = db.select(
         Message.id,
         Message.parent_id,
-        Message.text,
-        Message.created_at,
-        Message.user_message,
         db.literal(0).label("depth"),
     ).where(db.func.hex(Message.id) == selected_id)
 
@@ -162,9 +208,6 @@ def get_branch_messages(message_id: str) -> list[Message]:
     up_recursive = db.select(
         Message.id,
         Message.parent_id,
-        Message.text,
-        Message.created_at,
-        Message.user_message,
         (up_branch.c.depth + 1).label("depth"),
     ).select_from(db.join(Message, up_branch, Message.id == up_branch.c.parent_id))
 
@@ -191,7 +234,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
         Message.id,
         Message.parent_id,
         (down_branch.c.depth + 1).label("depth"),
-    ).where(Message.id == child_subq.scalar_subquery())
+    ).select_from(db.join(Message, down_branch, Message.id == child_subq))
 
     down_branch = down_branch.union_all(down_recursive)
 
