@@ -2,6 +2,7 @@ from app import db
 from app.models import Chat, Message, Tag, User
 from werkzeug.security import generate_password_hash
 import uuid
+from sqlalchemy.orm import aliased
 
 
 def create_user(username: str, password: str) -> User:
@@ -145,62 +146,30 @@ def create_tag(text: str):
     db.session.commit()
 
 
-def get_branch_messages(message_id: str) -> list[Message]:
-    """
-    WITH recursive up_branch(id, parent_id, depth) AS (
-        SELECT message.id        AS id,
-                message.parent_id AS parent_id,
-                0                 AS depth
-        FROM   message
-        WHERE  hex(message.id) = :selected_id
-        UNION ALL
-        SELECT message.id          AS id,
-                message.parent_id   AS parent_id,
-                up_branch.depth + 1 AS depth
-        FROM   message
-        JOIN   up_branch
-        ON     message.id = up_branch.parent_id), max_depth AS (
-        SELECT max(up_branch.depth) AS d
-        FROM   up_branch), down_branch(id, parent_id, depth) AS (
-        SELECT message.id        AS id,
-                message.parent_id AS parent_id,
-                0                 AS depth
-        FROM   message
-        WHERE  hex(message.id) = :selected_id
-        UNION ALL
-        SELECT message.id            AS id,
-                message.parent_id     AS parent_id,
-                down_branch.depth + 1 AS depth
-        FROM   message
-        JOIN   down_branch
-        ON     message.id = (
-                        SELECT   message.id
-                        FROM     message
-                        WHERE    message.parent_id = down_branch.id
-                        ORDER BY message.created_at ASC limit 1))
-    SELECT up_branch.id,
-           up_branch.parent_id,
-           max_depth.d - up_branch.depth AS ordering
-    FROM   up_branch
-    JOIN   max_depth
-    ON     true
-    UNION ALL
-    SELECT   down_branch.id,
-             down_branch.parent_id,
-             max_depth.d + down_branch.depth AS ordering
-    FROM     down_branch
-    JOIN     max_depth
-    ON       true
-    WHERE    down_branch.depth > 0
-    ORDER BY ordering
-    """
+def children_list_subq(message_col):
+    m = aliased(Message)
 
+    ordered_children_subq = (
+        db.select(db.func.hex(m.id).label("child_id"))
+        .where(m.parent_id == message_col)
+        .order_by(m.created_at.asc())
+        .correlate(Message)
+        .subquery()
+    )
+
+    return db.select(
+        db.func.group_concat(ordered_children_subq.c.child_id, ",")
+    ).scalar_subquery()
+
+
+def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
     selected_id = uuid.UUID(message_id).bytes.hex().upper()
 
     up_base = db.select(
         Message.id,
         Message.parent_id,
         db.literal(0).label("depth"),
+        children_list_subq(Message.id).label("children_ids"),
     ).where(db.func.hex(Message.id) == selected_id)
 
     up_branch = up_base.cte(name="up_branch", recursive=True)
@@ -209,6 +178,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
         Message.id,
         Message.parent_id,
         (up_branch.c.depth + 1).label("depth"),
+        children_list_subq(Message.id).label("children_ids"),
     ).select_from(db.join(Message, up_branch, Message.id == up_branch.c.parent_id))
 
     up_branch = up_branch.union_all(up_recursive)
@@ -217,6 +187,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
         Message.id,
         Message.parent_id,
         db.literal(0).label("depth"),
+        children_list_subq(Message.id).label("children_ids"),
     ).where(db.func.hex(Message.id) == selected_id)
 
     down_branch = down_base.cte(name="down_branch", recursive=True)
@@ -234,6 +205,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
         Message.id,
         Message.parent_id,
         (down_branch.c.depth + 1).label("depth"),
+        children_list_subq(Message.id).label("children_ids"),
     ).select_from(db.join(Message, down_branch, Message.id == child_subq))
 
     down_branch = down_branch.union_all(down_recursive)
@@ -246,6 +218,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
         up_branch.c.id,
         up_branch.c.parent_id,
         (max_depth_cte.c.d - up_branch.c.depth).label("ordering"),
+        up_branch.c.children_ids,
     ).select_from(db.join(up_branch, max_depth_cte, db.literal(True)))
 
     down_query = (
@@ -253,6 +226,7 @@ def get_branch_messages(message_id: str) -> list[Message]:
             down_branch.c.id,
             down_branch.c.parent_id,
             (max_depth_cte.c.d + down_branch.c.depth).label("ordering"),
+            down_branch.c.children_ids,
         )
         .select_from(db.join(down_branch, max_depth_cte, db.literal(True)))
         .where(down_branch.c.depth > 0)
@@ -262,6 +236,25 @@ def get_branch_messages(message_id: str) -> list[Message]:
         db.literal_column("ordering")
     )
 
-    results = db.session.query(Message).from_statement(final_query).all()
+    results = (
+        db.session.query(Message, final_query.c.children_ids)
+        .from_statement(final_query)
+        .all()
+    )
+
+    results = [
+        (
+            message,
+            (
+                [
+                    str(uuid.UUID(bytes=bytes.fromhex(child_id)))
+                    for child_id in children.split(",")
+                ]
+                if children
+                else []
+            ),
+        )
+        for message, children in results
+    ]
 
     return results

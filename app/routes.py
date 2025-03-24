@@ -62,7 +62,17 @@ def chats(chat_id):
 
         if current_chat:
             if len(current_chat.messages) != 0:
-                messages = db_utils.get_branch_messages(current_chat.messages[0].id)
+                message_id = request.args.get("message_id", None)
+
+                if message_id:
+                    messages = db_utils.get_branch_messages(message_id)
+                else:
+                    messages = db_utils.get_branch_messages(current_chat.messages[0].id)
+
+                for x, (message, children) in enumerate(messages):
+                    message = message.to_dict()
+                    message["children"] = children
+                    messages[x] = message
             else:
                 messages = []
 

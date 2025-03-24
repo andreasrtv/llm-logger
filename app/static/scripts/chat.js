@@ -4,7 +4,7 @@ const socket = io.connect(window.location.origin);
 
 function sendMessage() {
   const parent = document.querySelector("#message-container >div:last-child");
-  const text = document.getElementById("message-input").value;
+  const text = document.getElementById("message-input").value.trim();
 
   let parent_id = null;
 
@@ -12,7 +12,7 @@ function sendMessage() {
     parent_id = parent.id.slice(8);
   }
 
-  if (text.trim()) {
+  if (text) {
     socket.emit("send_message", {
       chat_id: chatId,
       sender: "user",
@@ -61,7 +61,7 @@ function newMessage(message) {
   bubble.appendChild(text);
   bubble.appendChild(date);
 
-  if (message.user_message) {
+  if (!message.user_message) {
     addForkButton(bubble);
   }
 
