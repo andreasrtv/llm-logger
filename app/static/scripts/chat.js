@@ -37,10 +37,19 @@ document.getElementById("message-input").addEventListener("keypress", (e) => {
 });
 
 function newMessage(message) {
+  if (
+    message.parent_id &&
+    !document.getElementById(`message-${message.parent_id}`)
+  ) {
+    return;
+  }
+
   const bubble = document.createElement("div");
   bubble.id = `message-${message.id}`;
   bubble.classList.add(
     message.user_message ? "float-right" : "float-left",
+    message.user_message ? "user-message" : "ai-message",
+    "break-words",
     "mb-4",
     "w-2/3",
     "bg-zinc-700",
@@ -55,28 +64,39 @@ function newMessage(message) {
   text.textContent = message.text;
 
   const date = document.createElement("span");
-  date.classList.add("text-xs", "text-slate-500");
+  date.classList.add("text-sm", "text-slate-500");
   date.textContent = moment().calendar(message.created_at);
+
+  const clickableId = document.createElement("a");
+  clickableId.classList.add(
+    "text-sm",
+    "text-slate-500",
+    "px-8",
+    "hover:text-slate-300"
+  );
+  clickableId.href = `/chats/${chatId}?message_id=${message.id}`;
+  clickableId.textContent = `${message.id}`;
+
+  bubble.appendChild(text);
+  bubble.appendChild(date);
+  bubble.appendChild(clickableId);
 
   const messageChildren = document.createElement("input");
   messageChildren.classList.add("children");
   messageChildren.value = "[]";
   messageChildren.type = "hidden";
-  bubble.appendChild(messageChildren);
 
   const childrenIdxEl = document.createElement("input");
   childrenIdxEl.classList.add("current-child-idx");
   childrenIdxEl.value = "";
   childrenIdxEl.type = "hidden";
-  bubble.appendChild(childrenIdxEl);
 
-  bubble.appendChild(text);
-  bubble.appendChild(date);
+  bubble.appendChild(messageChildren);
+  bubble.appendChild(childrenIdxEl);
 
   messageContainer.appendChild(bubble);
 
   if (!message.user_message) {
-    bubble.classList.add("ai-message");
     addForkButtons(bubble, true);
   }
 
@@ -100,7 +120,11 @@ function messageDone(bubble) {
 
   const text = bubble.querySelector("span");
   text.classList.add("markdown-content");
-  text.innerHTML = DOMPurify.sanitize(marked.parse(text.textContent));
+  const escapedContent = text.textContent
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  text.innerHTML = DOMPurify.sanitize(marked.parse(escapedContent));
 
   document.querySelectorAll(`#${bubble.id} pre code`).forEach((el) => {
     addCopyButton(el);

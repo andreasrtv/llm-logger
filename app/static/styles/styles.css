@@ -47,6 +47,7 @@
   border-radius: 0.5rem;
   overflow-x: auto;
 }
+
 .markdown-content code {
   font-family: Consolas, Monaco, Lucida Console, Liberation Mono,
     DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New;
@@ -64,6 +65,7 @@
   color: oklch(0.746 0.16 232.661); /* color-sky-400 */
   text-decoration: underline;
 }
+
 .markdown-content a:hover {
   color: oklch(0.5 0.134 242.749); /* color-sky-700 */
 }
@@ -110,6 +112,11 @@
   animation: loadingBlink 0.5s 2 ease-in-out;
 }
 
+.chat-highlight {
+  background-color: oklch(0.37 0.013 285.805); /* color-zinc-700 */
+  animation: loadingBlink 0.5s 1 ease-in-out;
+}
+
 /* scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
@@ -126,7 +133,6 @@
 
 /* copy button */
 .copy-btn {
-  background-color: oklch(0.551 0.027 264.364); /* color-gray-500 */
   border-radius: 5px;
   padding: 5px 10px;
   cursor: pointer;
@@ -141,8 +147,6 @@
 
 /* fork button */
 .fork-btn {
-  color: white;
-  background-color: oklch(0.551 0.027 264.364); /* color-gray-500 */
   border-radius: 5px;
   padding: 5px 10px;
   cursor: pointer;

@@ -1,4 +1,6 @@
 <h1 class="text-3xl font-semibold text-center">Chat Info</h1>
+<a class="text-center text-sm text-slate-500 px-8 hover:text-slate-300 pb-4"
+    href="{{ url_for('chats', chat_id=chat.id) }}">{{ chat.id }}</a>
 
 <div class="flex flex-col justify-start flex-1 overflow-y-auto ">
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-wrap gap-1">
