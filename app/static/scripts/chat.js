@@ -81,12 +81,12 @@ function newMessage(message) {
   }
 
   if (message.parent_id) {
-    const parentMessage = document.querySelector(
+    const parentAIMessage = document.querySelector(
       `.ai-message#message-${message.parent_id}`
     );
 
-    if (parentMessage) {
-      updateForkPages(parentMessage, message.id);
+    if (parentAIMessage) {
+      updateForkPages(parentAIMessage, message.id);
     }
   }
 
@@ -106,27 +106,25 @@ function messageDone(bubble) {
     addCopyButton(el);
     hljs.highlightElement(el);
   });
+
+  bubble.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 socket.emit("join", chatId);
 
 socket.on("new_message", (message) => {
   newMessage(message);
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
 });
 
 socket.on("new_message_stream", (chunk) => {
   const text = document.querySelector(`#message-${chunk.message_id} span`);
   text.textContent += chunk.text;
-
-  messageContainer.scrollTop = messageContainer.scrollHeight;
+  text.scrollIntoView({ block: "center", behavior: "smooth" });
 });
 
 socket.on("new_message_done", (message) => {
   const bubble = document.getElementById(`message-${message.message_id}`);
   messageDone(bubble);
 
-  messageContainer.scrollTop = messageContainer.scrollHeight;
   bubble.classList.add("chat-loading-done");
 });

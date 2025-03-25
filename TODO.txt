@@ -1,5 +1,0 @@
-TODOs in no particular order:
-- Forking chats
-    - Tree stucture. Each message points to its parent
-    - Fork button/icon on each AI message (to create fork)
-    - Arrows to switch between forks

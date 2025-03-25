@@ -23,10 +23,10 @@ def query(user_message):
         conversation = []
 
         chat = db_utils.get_chat(user_message["chat_id"])
-        messages = chat.messages
+        messages = [m[0] for m in db_utils.get_branch_messages(user_message["id"])]
 
         if chat.system_prompt:
-            conversation.append({"role": "system", "content": chat.system_prompt})
+            conversation.append({"role": "developer", "content": chat.system_prompt})
 
         conversation += [
             {"role": "user" if m.user_message else "assistant", "content": m.text}
@@ -34,7 +34,7 @@ def query(user_message):
         ]
 
         stream = openai_client.chat.completions.create(
-            messages=conversation, model="gpt-4o-2024-08-06", stream=True
+            messages=conversation, model="o3-mini", stream=True
         )
 
     chunk = next(stream)

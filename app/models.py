@@ -116,7 +116,7 @@ class Message(db.Model):
     )
 
     def __repr__(self):
-        return f"<Message {self.id} (Chat {self.chat_id})>"
+        return f'<Message {self.id[:8]} ({self.chat_id[:8]}): "{self.text[:16]}">'
 
     def to_dict(self):
         d = {
