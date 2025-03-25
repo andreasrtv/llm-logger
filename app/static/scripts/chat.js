@@ -58,14 +58,37 @@ function newMessage(message) {
   date.classList.add("text-xs", "text-slate-500");
   date.textContent = moment().calendar(message.created_at);
 
+  const messageChildren = document.createElement("input");
+  messageChildren.classList.add("children");
+  messageChildren.value = "[]";
+  messageChildren.type = "hidden";
+  bubble.appendChild(messageChildren);
+
+  const childrenIdxEl = document.createElement("input");
+  childrenIdxEl.classList.add("current-child-idx");
+  childrenIdxEl.value = "";
+  childrenIdxEl.type = "hidden";
+  bubble.appendChild(childrenIdxEl);
+
   bubble.appendChild(text);
   bubble.appendChild(date);
 
+  messageContainer.appendChild(bubble);
+
   if (!message.user_message) {
-    addForkButton(bubble);
+    bubble.classList.add("ai-message");
+    addForkButtons(bubble, true);
   }
 
-  messageContainer.appendChild(bubble);
+  if (message.parent_id) {
+    const parentMessage = document.querySelector(
+      `.ai-message#message-${message.parent_id}`
+    );
+
+    if (parentMessage) {
+      updateForkPages(parentMessage, message.id);
+    }
+  }
 
   if (!message.stream) {
     messageDone(bubble);
