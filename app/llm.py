@@ -1,24 +1,47 @@
 from app import Config, db_utils, openai_client
 from time import sleep
+from pydantic import BaseModel, Field
+from typing import List
+import json
 
 
 def fake_stream():
-    class dotdict(dict):
-        __getattr__ = dict.get
-        __setattr__ = dict.__setitem__
-        __delattr__ = dict.__delitem__
-
+    sleep(0.5)
     message = open("fake_response.txt").read().split(" ")
-    message = [m + " " for m in message]
 
-    for m in message:
-        yield dotdict({"choices": [dotdict({"delta": dotdict({"content": m})})]})
-        sleep(0.01)
+    for x in range(len(message)):
+        yield " ".join(message[: x + 1])
+        sleep(0.08)
+
+
+class ResponseModel(BaseModel):
+    reasoning: str = Field(
+        ...,
+        description="Describe the logic and reasoning behind the recommendation.",
+    )
+    actionable_steps: List[str] = Field(
+        ...,
+        description="A list of exactly 3 steps or practical actions to address the issue.",
+    )
 
 
 def query(user_message):
+    message = db_utils.create_message(
+        user_message["chat_id"],
+        "Reasoning...\n",
+        user_message=False,
+        parent_id=user_message["id"],
+    )
+
+    yield message
+
     if Config.USE_FAKE_LLM:
         stream = fake_stream()
+
+        for m in stream:
+            yield m
+
+        db_utils.edit_message(message.id, m)
     else:
         conversation = []
 
@@ -33,39 +56,20 @@ def query(user_message):
             for m in messages
         ]
 
-        stream = openai_client.chat.completions.create(
-            messages=conversation, model="o3-mini", stream=True
-        )
+        with openai_client.beta.chat.completions.stream(
+            messages=conversation,
+            model="o3-mini",
+            response_format=ResponseModel,
+        ) as stream:
+            for event in stream:
+                if event.type == "content.delta" and event.parsed is not None:
+                    content = json.dumps(event.parsed)
+                    db_utils.edit_message(message.id, content)
+                    yield content
 
-    chunk = next(stream)
-    response = chunk.choices[0].delta.content
+        final = stream.get_final_completion()
 
-    new_message = db_utils.create_message(
-        user_message["chat_id"],
-        response,
-        user_message=False,
-        parent_id=user_message["id"],
-    )
+        final_content = final.choices[0].message.parsed.model_dump_json()
+        db_utils.edit_message(message.id, final_content)
 
-    yield new_message
-
-    try:
-        save_interval = 20
-        i = 0
-
-        for chunk in stream:
-            chunked_response = chunk.choices[0].delta.content
-            if chunked_response:
-                response += chunked_response
-
-                yield chunked_response
-
-                i += 1
-                if i % save_interval == 0:
-                    db_utils.edit_message(new_message.id, response)
-
-    except Exception:
-        if response and type(response) == str:
-            db_utils.edit_message(new_message.id, response)
-
-    db_utils.edit_message(new_message.id, response)
+        yield final_content
