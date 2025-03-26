@@ -46,7 +46,7 @@ def query(user_message):
         conversation = []
 
         chat = db_utils.get_chat(user_message["chat_id"])
-        messages = [m[0] for m in db_utils.get_branch_messages(user_message["id"])]
+        messages = db_utils.get_branch_messages(user_message["id"])
 
         if chat.system_prompt:
             conversation.append({"role": "developer", "content": chat.system_prompt})

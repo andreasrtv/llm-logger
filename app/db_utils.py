@@ -2,7 +2,6 @@ from app import db
 from app.models import Chat, Message, Tag, User
 from werkzeug.security import generate_password_hash
 import uuid
-from sqlalchemy.orm import aliased
 
 
 def create_user(username: str, password: str) -> User:
@@ -48,7 +47,7 @@ def create_chat(user_id: str) -> str:
 def get_all_chats(deleted=False, completed=False) -> list[Chat]:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed)
-        .order_by(Chat.created_at.desc())
+        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
         .all()
     )
 
@@ -56,7 +55,7 @@ def get_all_chats(deleted=False, completed=False) -> list[Chat]:
 def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
-        .order_by(Chat.created_at.desc())
+        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
         .all()
     )
 
@@ -64,7 +63,7 @@ def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
 def get_newest_chat(deleted=False, completed=False) -> Chat:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed)
-        .order_by(Chat.created_at.desc())
+        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
         .first()
     )
 
@@ -72,7 +71,7 @@ def get_newest_chat(deleted=False, completed=False) -> Chat:
 def get_own_newest_chat(user_id: str, deleted=False, completed=False) -> Chat:
     return (
         Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
-        .order_by(Chat.created_at.desc())
+        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
         .first()
     )
 
@@ -146,22 +145,6 @@ def create_tag(text: str):
     db.session.commit()
 
 
-def children_list_subq(message_col):
-    m = aliased(Message)
-
-    ordered_children_subq = (
-        db.select(db.func.hex(m.id).label("child_id"))
-        .where(m.parent_id == message_col)
-        .order_by(m.created_at.asc())
-        .correlate(Message)
-        .subquery()
-    )
-
-    return db.select(
-        db.func.group_concat(ordered_children_subq.c.child_id, ",")
-    ).scalar_subquery()
-
-
 def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
     selected_id = uuid.UUID(message_id).bytes.hex().upper()
 
@@ -169,7 +152,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         Message.id,
         Message.parent_id,
         db.literal(0).label("depth"),
-        children_list_subq(Message.id).label("children_ids"),
     ).where(db.func.hex(Message.id) == selected_id)
 
     up_branch = up_base.cte(name="up_branch", recursive=True)
@@ -178,7 +160,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         Message.id,
         Message.parent_id,
         (up_branch.c.depth + 1).label("depth"),
-        children_list_subq(Message.id).label("children_ids"),
     ).select_from(db.join(Message, up_branch, Message.id == up_branch.c.parent_id))
 
     up_branch = up_branch.union_all(up_recursive)
@@ -187,7 +168,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         Message.id,
         Message.parent_id,
         db.literal(0).label("depth"),
-        children_list_subq(Message.id).label("children_ids"),
     ).where(db.func.hex(Message.id) == selected_id)
 
     down_branch = down_base.cte(name="down_branch", recursive=True)
@@ -205,7 +185,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         Message.id,
         Message.parent_id,
         (down_branch.c.depth + 1).label("depth"),
-        children_list_subq(Message.id).label("children_ids"),
     ).select_from(db.join(Message, down_branch, Message.id == child_subq))
 
     down_branch = down_branch.union_all(down_recursive)
@@ -218,7 +197,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         up_branch.c.id,
         up_branch.c.parent_id,
         (max_depth_cte.c.d - up_branch.c.depth).label("ordering"),
-        up_branch.c.children_ids,
     ).select_from(db.join(up_branch, max_depth_cte, db.literal(True)))
 
     down_query = (
@@ -226,7 +204,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
             down_branch.c.id,
             down_branch.c.parent_id,
             (max_depth_cte.c.d + down_branch.c.depth).label("ordering"),
-            down_branch.c.children_ids,
         )
         .select_from(db.join(down_branch, max_depth_cte, db.literal(True)))
         .where(down_branch.c.depth > 0)
@@ -236,25 +213,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         db.literal_column("ordering")
     )
 
-    results = (
-        db.session.query(Message, final_query.c.children_ids)
-        .from_statement(final_query)
-        .all()
-    )
-
-    results = [
-        (
-            message,
-            (
-                [
-                    str(uuid.UUID(bytes=bytes.fromhex(child_id)))
-                    for child_id in children.split(",")
-                ]
-                if children
-                else []
-            ),
-        )
-        for message, children in results
-    ]
+    results = db.session.query(Message).from_statement(final_query).all()
 
     return results

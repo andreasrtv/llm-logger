@@ -26,15 +26,14 @@ socket.on("new_message", (message) => {
 });
 
 socket.on("new_message_stream", (chunk) => {
-  const text = document.querySelector(`#message-${chunk.message_id} div`);
-  text.textContent = chunk.text;
-  text.scrollIntoView({ block: "center", behavior: "smooth" });
+  const bubble = document.querySelector(`#message-${chunk.message_id} div`);
+  formatMessage(bubble, chunk.text);
+  bubble.scrollIntoView({ block: "center", behavior: "smooth" });
 });
 
 socket.on("new_message_done", (message) => {
   const bubble = document.getElementById(`message-${message.message_id}`);
   messageDone(bubble);
-
   bubble.classList.add("chat-loading-done");
 });
 

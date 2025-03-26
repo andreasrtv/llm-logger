@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime
 from flask_login import UserMixin
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
 from sqlalchemy.types import CHAR, TypeDecorator
 from typing import Optional
@@ -77,6 +78,21 @@ class Chat(db.Model):
     tags: so.Mapped[Optional[list["Tag"]]] = so.relationship(
         "Tag", secondary=chat_tags, back_populates="chats"
     )
+
+    @hybrid_property
+    def newest_message_at(self):
+        if self.messages:
+            return max(message.created_at for message in self.messages)
+        return None
+
+    @newest_message_at.expression
+    def newest_message_at(cls):
+        return (
+            db.select(func.max(Message.created_at))
+            .where(Message.chat_id == cls.id)
+            .correlate(cls)
+            .scalar_subquery()
+        )
 
     def __repr__(self):
         return f"<Chat {self.title} (User {self.user_id})>"
