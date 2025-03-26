@@ -52,6 +52,15 @@ function newFork(event) {
 }
 
 function addForkButton(bubble) {
+  const forkButton = document.createElement("button");
+  forkButton.classList.add("fork-btn", "hidden");
+  forkButton.innerHTML = forkSVG;
+  bubble.appendChild(forkButton);
+
+  forkButton.addEventListener("click", newFork);
+}
+
+function addForkPages(bubble) {
   const forkPages = document.createElement("div");
   forkPages.classList.add("fork-pages", "float-right", "flex", "flex-row");
   bubble.appendChild(forkPages);
@@ -69,13 +78,6 @@ function addForkButton(bubble) {
   forwardArrow.innerHTML = arrowRightSVG;
   forwardArrow.classList.add(...forkArrowsCSS);
   forkPages.appendChild(forwardArrow);
-
-  const forkButton = document.createElement("button");
-  forkButton.classList.add("fork-btn", "hidden");
-  forkButton.innerHTML = forkSVG;
-  bubble.appendChild(forkButton);
-
-  forkButton.addEventListener("click", newFork);
 
   updateForkPages(bubble);
 }
@@ -101,7 +103,7 @@ function updateForkPages(bubble, newChild = null) {
   }
 
   if (childrenIds.length != 0) {
-    bubble.querySelector(".fork-btn").classList.remove("hidden");
+    bubble.querySelector(".fork-btn")?.classList.remove("hidden");
   }
 
   if (isNaN(currChildIdx) || childrenIds.length <= 1) {
@@ -214,6 +216,7 @@ function newMessage(message) {
 
   if (!message.user_message) {
     addForkButton(bubble);
+    addForkPages(bubble);
   }
 
   if (message.parent_id) {
@@ -232,11 +235,12 @@ function newMessage(message) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (document.querySelector("#message-form")) {
-    document.querySelectorAll(".ai-message").forEach((el) => {
+  document.querySelectorAll(".ai-message").forEach((el) => {
+    if (document.querySelector("#message-form")) {
       addForkButton(el);
-    });
-  }
+    }
+    addForkPages(el);
+  });
 
   document.querySelectorAll("#message-container >div").forEach((bubble) => {
     formatMessage(bubble.querySelector("div"));
