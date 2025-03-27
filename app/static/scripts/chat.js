@@ -48,6 +48,7 @@ function newFork(event) {
     arrows[1].href = `${arrows[1].href.split("?")[0]}?message_id=${childrenIds[0]}`;
 
     forkPages.classList.remove("hidden");
+    bubble.scrollIntoView({ block: "end", behavior: "smooth" });
   }
 }
 
@@ -130,13 +131,12 @@ function formatMessage(text, rawText = null) {
     let structuredText = "";
 
     if (structured.hasOwnProperty("reasoning")) {
-      structuredText += `## Reasoning\n${structured.reasoning}`;
+      structuredText += `## Reasoning\n${structured.reasoning}\n`;
     }
 
-    if (structured.hasOwnProperty("actionable_steps")) {
-      structuredText += "\n## Steps\n";
-      for (const [x, step] of structured.actionable_steps.entries()) {
-        structuredText += `${x + 1}. ${step}\n`;
+    if (structured.hasOwnProperty("actions")) {
+      for (const [x, step] of structured.actions.entries()) {
+        structuredText += `### Step ${x + 1}\n${step}\n`;
       }
     }
 
@@ -229,6 +229,7 @@ function newMessage(message) {
 
   if (!message.stream) {
     formatMessage(text);
+    messageDone(bubble);
   }
 
   bubble.scrollIntoView({ block: "center", behavior: "smooth" });

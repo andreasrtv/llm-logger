@@ -1,13 +1,16 @@
-from app import Config, db_utils, openai_client
+from app import Config, db_utils
 from time import sleep
 from pydantic import BaseModel, Field
 from typing import List
 import json
 
+if not Config.MOCK_LLM_RESPONSES:
+    from app import openai_client
+
 
 def fake_stream():
     sleep(0.5)
-    message = open("fake_response.txt").read().split(" ")
+    message = Config.FAKE_RESPONSE.split(" ")
 
     for x in range(len(message)):
         yield " ".join(message[: x + 1])
@@ -17,11 +20,11 @@ def fake_stream():
 class ResponseModel(BaseModel):
     reasoning: str = Field(
         ...,
-        description="Describe the logic and reasoning behind the recommendation.",
+        description="Describe and reason about the user's message and their needs.",
     )
-    actionable_steps: List[str] = Field(
+    actions: List[str] = Field(
         ...,
-        description="A list of exactly 3 steps or practical actions to address the issue.",
+        description="3 alternative responses to the user's message. Each response should describe 1 action that the user can peform. Answer with as much detail as necessary, you do not have to limit yourself.",
     )
 
 
@@ -35,7 +38,7 @@ def query(user_message):
 
     yield message
 
-    if Config.USE_FAKE_LLM:
+    if Config.MOCK_LLM_RESPONSES:
         stream = fake_stream()
 
         for m in stream:
@@ -58,12 +61,14 @@ def query(user_message):
 
         with openai_client.beta.chat.completions.stream(
             messages=conversation,
-            model="o3-mini",
+            model=Config.AI_MODEL,
             response_format=ResponseModel,
         ) as stream:
             for event in stream:
                 if event.type == "content.delta" and event.parsed is not None:
                     content = json.dumps(event.parsed)
+                    if content == "{}":
+                        continue
                     db_utils.edit_message(message.id, content)
                     yield content
 

@@ -9,9 +9,26 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
 
-    USE_FAKE_LLM = os.getenv("USE_FAKE_LLM", "False").lower() == "true"
+    MOCK_LLM_RESPONSES = os.getenv("MOCK_LLM_RESPONSES", "false").lower() == "true"
 
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-")
+    if MOCK_LLM_RESPONSES:
+        if not os.path.isfile("fake_response.txt"):
+            raise ValueError("No fake response file found.")
+        with open("fake_response.txt") as f:
+            FAKE_RESPONSE = f.read()
+    else:
+        AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+        if AZURE_OPENAI_API_KEY:
+            AI_MODEL = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+            AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
+        elif OPENAI_API_KEY:
+            AI_MODEL = os.getenv("OPENAI_MODEL")
+        else:
+            raise ValueError(
+                "No API key provided. Either set MOCK_LLM_RESPONSES=true or provide an API key."
+            )
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DB_URI", f"sqlite:///{os.path.join(BASE_DIR, 'database.db')}"

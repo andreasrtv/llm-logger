@@ -34,7 +34,7 @@
             <span class="text-xs text-slate-500">{{ c.user.username }}</span>
         </div>
         <span class="basis-1/2 text-xs text-slate-500 line-clamp-4">
-            {{ c.notes if c.notes }}
+            {{ c.notes if c.notes else c.messages[0].text[:200] if c.messages else '' }}
         </span>
     </a>
     {% endfor %}
