@@ -135,8 +135,8 @@ function formatMessage(text, rawText = null) {
     }
 
     if (structured.hasOwnProperty("actions")) {
-      for (const [x, step] of structured.actions.entries()) {
-        structuredText += `### Step ${x + 1}\n${step}\n`;
+      for (const [x, action] of structured.actions.entries()) {
+        structuredText += `### Action ${x + 1}\n${action}\n`;
       }
     }
 

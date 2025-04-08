@@ -29,7 +29,7 @@ if not app.config["MOCK_LLM_RESPONSES"]:
         from openai import AzureOpenAI
 
         openai_client = AzureOpenAI(
-            api_version="2024-10-21",
+            api_version="2024-12-01-preview",
             api_key=app.config["AZURE_OPENAI_API_KEY"],
             azure_endpoint=app.config["AZURE_ENDPOINT"],
         )

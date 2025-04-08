@@ -59,22 +59,56 @@ def query(user_message):
             for m in messages
         ]
 
-        with openai_client.beta.chat.completions.stream(
-            messages=conversation,
-            model=Config.AI_MODEL,
-            response_format=ResponseModel,
-        ) as stream:
-            for event in stream:
-                if event.type == "content.delta" and event.parsed is not None:
-                    content = json.dumps(event.parsed)
-                    if content == "{}":
-                        continue
-                    db_utils.edit_message(message.id, content)
-                    yield content
+        # with openai_client.beta.chat.completions.stream(
+        #     messages=conversation,
+        #     model=Config.AI_MODEL,
+        #     response_format=ResponseModel,
+        #     # reasoning_effort="high",
+        # ) as stream:
+        #     for event in stream:
+        #         if event.type == "content.delta" and event.parsed is not None:
+        #             content = json.dumps(event.parsed)
+        #             if content == "{}":
+        #                 continue
+        #             db_utils.edit_message(message.id, content)
+        #             yield content
 
-        final = stream.get_final_completion()
+        # final = stream.get_final_completion()
 
-        final_content = final.choices[0].message.parsed.model_dump_json()
-        db_utils.edit_message(message.id, final_content)
+        # final_content = final.choices[0].message.parsed.model_dump_json()
+        # db_utils.edit_message(message.id, final_content)
 
-        yield final_content
+        # yield final_content
+
+        stream = openai_client.chat.completions.create(
+            messages=conversation, model="o3-mini", stream=True
+        )
+
+        chunk = next(stream)
+        if len(chunk.choices) == 0:
+            response = ""
+        else:
+            response = chunk.choices[0].delta.content
+
+        try:
+            save_interval = 20
+            i = 0
+
+            for chunk in stream:
+                if len(chunk.choices) == 0:
+                    continue
+                chunked_response = chunk.choices[0].delta.content
+                if chunked_response:
+                    response += chunked_response
+
+                    yield response
+
+                    i += 1
+                    if i % save_interval == 0:
+                        db_utils.edit_message(message.id, response)
+
+        except Exception:
+            if response and type(response) == str:
+                db_utils.edit_message(message.id, response)
+
+        db_utils.edit_message(message.id, response)

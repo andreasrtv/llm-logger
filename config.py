@@ -12,10 +12,10 @@ class Config:
     MOCK_LLM_RESPONSES = os.getenv("MOCK_LLM_RESPONSES", "false").lower() == "true"
 
     if MOCK_LLM_RESPONSES:
-        if not os.path.isfile("fake_response.txt"):
+        if not os.path.isfile(os.path.join(BASE_DIR, "fake_response.txt")):
             raise ValueError("No fake response file found.")
-        with open("fake_response.txt") as f:
-            FAKE_RESPONSE = f.read()
+
+        FAKE_RESPONSE = open(os.path.join(BASE_DIR, "fake_response.txt")).read()
     else:
         AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
