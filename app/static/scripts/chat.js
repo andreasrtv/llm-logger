@@ -16,10 +16,29 @@ function addCopyButton(codeBlock) {
 
   button.addEventListener("click", () => {
     const codeText = codeBlock.textContent || codeBlock.innerText;
-    navigator.clipboard
-      .writeText(codeText)
-      .then(() => {})
-      .catch(() => {});
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(codeText)
+        .then(() => {})
+        .catch(() => {});
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = codeText;
+
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+
+      document.body.prepend(textArea);
+      textArea.select();
+
+      try {
+        document.execCommand("copy");
+      } catch (error) {
+        console.error(error);
+      } finally {
+        textArea.remove();
+      }
+    }
   });
 }
 
