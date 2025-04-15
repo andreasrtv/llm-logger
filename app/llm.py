@@ -80,17 +80,21 @@ def query(user_message):
 
         # yield final_content
 
-        stream = openai_client.chat.completions.create(
-            messages=conversation, model="o3-mini", stream=True
-        )
-
-        chunk = next(stream)
-        if len(chunk.choices) == 0:
-            response = ""
-        else:
-            response = chunk.choices[0].delta.content
+        try:
+            stream = openai_client.chat.completions.create(
+                messages=conversation, model="o3-mini", stream=True
+            )
+        except Exception as e:
+            db_utils._delete_message(message.id)
+            raise e
 
         try:
+            chunk = next(stream)
+            if len(chunk.choices) == 0:
+                response = ""
+            else:
+                response = chunk.choices[0].delta.content
+
             save_interval = 20
             i = 0
 
@@ -107,8 +111,9 @@ def query(user_message):
                     if i % save_interval == 0:
                         db_utils.edit_message(message.id, response)
 
-        except Exception:
+        except Exception as e:
             if response and type(response) == str:
                 db_utils.edit_message(message.id, response)
+            raise e
 
         db_utils.edit_message(message.id, response)

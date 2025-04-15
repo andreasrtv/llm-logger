@@ -117,6 +117,10 @@
   animation: loadingBlink 0.5s 1 ease-in-out;
 }
 
+.chat-error {
+  background-color: oklch(0.637 0.237 25.331);
+}
+
 /* scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

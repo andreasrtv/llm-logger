@@ -59,26 +59,42 @@ def handle_message(data):
         room=str(chat_id),
     )
 
-    llm_stream = llm.query(user_message)
+    try:
+        llm_stream = llm.query(user_message)
 
-    llm_message = next(llm_stream).to_dict()
-    llm_message["stream"] = True
+        llm_message = next(llm_stream).to_dict()
+        message_id = llm_message["id"]
+        llm_message["stream"] = True
 
-    emit(
-        "new_message",
-        llm_message,
-        room=str(chat_id),
-    )
-
-    for chunk in llm_stream:
         emit(
-            "new_message_stream",
-            {"text": chunk, "message_id": llm_message["id"]},
+            "new_message",
+            llm_message,
             room=str(chat_id),
         )
 
-    emit(
-        "new_message_done",
-        {"message_id": llm_message["id"]},
-        room=str(chat_id),
-    )
+        for chunk in llm_stream:
+            emit(
+                "new_message_stream",
+                {"text": chunk, "message_id": message_id},
+                room=str(chat_id),
+            )
+
+        emit(
+            "new_message_done",
+            {"message_id": message_id},
+            room=str(chat_id),
+        )
+    except Exception as e:
+        if "message_id" not in locals() or not message_id:
+            message_id = None
+
+        emit(
+            "error",
+            {
+                "error": str(e),
+                "message_id": message_id,
+            },
+            room=str(chat_id),
+        )
+
+        return

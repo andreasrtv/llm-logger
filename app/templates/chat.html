@@ -6,7 +6,7 @@
         {% for message in messages %}
         <div id="message-{{ message.id }}"
             class="mb-4 w-2/3 {{ 'float-right user-message' if message.user_message else 'float-left ai-message' }} bg-zinc-700 p-4 rounded-2xl relative">
-            <div class="markdown-content text-white break-words">{{ message.text }}</div>
+            <div class="markdown-content text-white break-words whitespace-pre-wrap">{{ message.text }}</div>
 
             <hr class="block h-px border-0 border-t border-gray-600 mb-1 mt-4 p-0">
             <span class="text-sm text-slate-500">{{ moment(message.created_at).calendar() }}</span>

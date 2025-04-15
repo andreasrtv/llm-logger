@@ -134,6 +134,16 @@ def edit_message(message_id: str, text: str):
         db.session.commit()
 
 
+def _delete_message(message_id: str):
+    message = Message.query.get(message_id)
+
+    if message:
+        chat = Chat.query.get(message.chat_id)
+
+        db.session.delete(message)
+        db.session.commit()
+
+
 def get_tags() -> list[Tag]:
     return Tag.query.all()
 

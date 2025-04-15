@@ -170,6 +170,7 @@ function newMessage(message) {
   bubble.classList.add(
     ...(message.user_message ? ["float-right", "user-message"] : ["float-left", "ai-message", "chat-loading"]),
     "break-words",
+    "whitespace-pre-wrap",
     "mb-4",
     "w-2/3",
     "bg-zinc-700",
@@ -253,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (message_id) {
     const bubble = document.getElementById(`message-${message_id}`);
     if (bubble) {
-      bubble.scrollIntoView({ block: "center", behavior: "smooth" });
+      bubble.scrollIntoView({ block: "center" });
       bubble.classList.add("chat-highlight");
     }
   }

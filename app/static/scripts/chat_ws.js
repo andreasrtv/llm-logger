@@ -28,13 +28,42 @@ socket.on("new_message", (message) => {
 socket.on("new_message_stream", (chunk) => {
   const bubble = document.querySelector(`#message-${chunk.message_id} div`);
   formatMessage(bubble, chunk.text);
-  bubble.scrollIntoView({ block: "center", behavior: "smooth" });
 });
 
 socket.on("new_message_done", (message) => {
   const bubble = document.getElementById(`message-${message.message_id}`);
   messageDone(bubble);
   bubble.classList.add("chat-loading-done");
+});
+
+socket.on("error", (error) => {
+  if (error.message_id) {
+    const bubble = document.getElementById(`message-${error.message_id}`);
+    bubble.classList.remove("chat-loading");
+    bubble.classList.add("chat-error");
+    bubble.querySelector("div").innerText += error.error;
+    bubble.querySelector("hr").remove();
+    bubble.querySelector("span").remove();
+    bubble.querySelector("a").remove();
+    bubble.scrollIntoView({ block: "center", behavior: "smooth" });
+  } else {
+    const errorBubble = document.createElement("div");
+    errorBubble.classList.add("chat-error");
+    errorBubble.classList.add(
+      "float-left",
+      "ai-message",
+      "mb-4",
+      "w-2/3",
+      "p-4",
+      "rounded-2xl",
+      "relative",
+      "chat-error",
+      "text-white"
+    );
+    errorBubble.innerText = error.error;
+    messageContainer.appendChild(errorBubble);
+    errorBubble.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
 });
 
 document.getElementById("message-form").onsubmit = (e) => {
