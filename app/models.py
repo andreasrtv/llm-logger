@@ -129,6 +129,7 @@ class Message(db.Model):
         back_populates="parent",
         uselist=True,
         post_update=True,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

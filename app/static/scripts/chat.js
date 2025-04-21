@@ -16,6 +16,7 @@ function addCopyButton(codeBlock) {
 
   button.addEventListener("click", () => {
     const codeText = codeBlock.textContent || codeBlock.innerText;
+
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard
         .writeText(codeText)
@@ -45,7 +46,7 @@ function addCopyButton(codeBlock) {
 function newFork(event) {
   const bubble = event.currentTarget.parentNode;
 
-  const messages = [...document.querySelectorAll("#message-container >div")];
+  const messages = [...document.querySelectorAll("#message-container .message")];
   const forkIdx = messages.findIndex((el) => el === bubble);
 
   if (forkIdx !== messages.length - 1) {
@@ -141,30 +142,9 @@ function updateForkPages(bubble, newChild = null) {
   forwardArrow.href = hrefBase + nextFork;
 }
 
-function formatMessage(text, rawText = null) {
-  let prettyContent = (rawText ? rawText : text.textContent).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-  try {
-    const structured = JSON.parse(prettyContent);
-
-    let structuredText = "";
-
-    if (structured.hasOwnProperty("reasoning")) {
-      structuredText += `## Reasoning\n${structured.reasoning}\n`;
-    }
-
-    if (structured.hasOwnProperty("actions")) {
-      for (const [x, action] of structured.actions.entries()) {
-        structuredText += `### Action ${x + 1}\n${action}\n`;
-      }
-    }
-
-    if (structuredText !== "") {
-      prettyContent = structuredText;
-    }
-  } catch (_) {}
-
-  text.innerHTML = DOMPurify.sanitize(marked.parse(prettyContent));
+function formatMessage(textEl, rawText = null) {
+  let prettyContent = (rawText ? rawText : textEl.textContent).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  textEl.innerHTML = DOMPurify.sanitize(marked.parse(prettyContent));
 }
 
 function messageDone(bubble) {
@@ -176,7 +156,7 @@ function messageDone(bubble) {
     hljs.highlightElement(el);
   });
 
-  bubble.scrollIntoView({ block: "center", behavior: "smooth" });
+  bubble.scrollIntoView({ behavior: "smooth" });
 }
 
 function newMessage(message) {
@@ -187,9 +167,9 @@ function newMessage(message) {
   const bubble = document.createElement("div");
   bubble.id = `message-${message.id}`;
   bubble.classList.add(
+    "message",
     ...(message.user_message ? ["float-right", "user-message"] : ["float-left", "ai-message", "chat-loading"]),
-    "break-words",
-    "whitespace-pre-wrap",
+
     "mb-4",
     "w-2/3",
     "bg-zinc-700",
@@ -199,7 +179,7 @@ function newMessage(message) {
   );
 
   const text = document.createElement("div");
-  text.classList.add("text-white", "markdown-content");
+  text.classList.add("message-text", "text-white", "markdown-content", "break-words", "whitespace-pre-wrap");
   text.textContent = message.text;
 
   const hr = document.createElement("hr");
@@ -214,10 +194,32 @@ function newMessage(message) {
   clickableId.href = `${window.location.pathname}?message_id=${message.id}`;
   clickableId.textContent = `${message.id}`;
 
+  const modifyButton = document.createElement("button");
+  modifyButton.classList.add("text-sm", "text-slate-500", "px-8", "hover:text-slate-300", "cursor-pointer");
+
+  if (message.user_message) {
+    modifyButton.classList.add("delete-btn");
+    modifyButton.textContent = "Delete";
+    modifyButton.addEventListener("click", () => {
+      deleteMessage(message.id);
+    });
+  } else {
+    document.querySelectorAll(".reprompt-btn").forEach((el) => {
+      el.remove();
+    });
+
+    modifyButton.classList.add("reprompt-btn");
+    modifyButton.textContent = "Reprompt";
+    modifyButton.addEventListener("click", () => {
+      repromptMessage(message.id);
+    });
+  }
+
   bubble.appendChild(text);
   bubble.appendChild(hr);
   bubble.appendChild(date);
   bubble.appendChild(clickableId);
+  bubble.appendChild(modifyButton);
 
   const messageChildren = document.createElement("input");
   messageChildren.classList.add("children");
@@ -252,7 +254,7 @@ function newMessage(message) {
     messageDone(bubble);
   }
 
-  bubble.scrollIntoView({ block: "center", behavior: "smooth" });
+  bubble.scrollIntoView({ behavior: "smooth" });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -263,17 +265,17 @@ document.addEventListener("DOMContentLoaded", () => {
     addForkPages(el);
   });
 
-  document.querySelectorAll("#message-container >div").forEach((bubble) => {
-    formatMessage(bubble.querySelector("div"));
+  document.querySelectorAll("#message-container .message").forEach((bubble) => {
+    formatMessage(bubble.querySelector(".message-text"));
     messageDone(bubble);
   });
 
-  const message_id = new URLSearchParams(window.location.search).get("message_id");
+  const messageId = new URLSearchParams(window.location.search).get("message_id");
 
-  if (message_id) {
-    const bubble = document.getElementById(`message-${message_id}`);
+  if (messageId) {
+    const bubble = document.getElementById(`message-${messageId}`);
     if (bubble) {
-      bubble.scrollIntoView({ block: "center" });
+      bubble.scrollIntoView();
       bubble.classList.add("chat-highlight");
     }
   }

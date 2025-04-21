@@ -121,6 +121,8 @@ def create_message(
 
         return message
 
+def get_message(message_id: str) -> Message:
+    return Message.query.get(message_id)
 
 def edit_message(message_id: str, text: str):
     message = Message.query.get(message_id)
@@ -134,12 +136,10 @@ def edit_message(message_id: str, text: str):
         db.session.commit()
 
 
-def _delete_message(message_id: str):
+def delete_message(message_id: str):
     message = Message.query.get(message_id)
 
     if message:
-        chat = Chat.query.get(message.chat_id)
-
         db.session.delete(message)
         db.session.commit()
 
@@ -156,7 +156,11 @@ def create_tag(text: str):
 
 
 def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
-    selected_id = uuid.UUID(message_id).bytes.hex().upper()
+    try:
+        selected_id = uuid.UUID(message_id).bytes.hex().upper()
+    except ValueError:
+        return []
+    
 
     up_base = db.select(
         Message.id,

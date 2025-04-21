@@ -5,13 +5,23 @@
     <div id="message-container" class="flex-1 overflow-y-auto bg-inherit p-2 pb-16">
         {% for message in messages %}
         <div id="message-{{ message.id }}"
-            class="mb-4 w-2/3 {{ 'float-right user-message' if message.user_message else 'float-left ai-message' }} bg-zinc-700 p-4 rounded-2xl relative">
-            <div class="markdown-content text-white break-words whitespace-pre-wrap">{{ message.text }}</div>
+            class="message mb-4 w-2/3 {{ 'float-right user-message' if message.user_message else 'float-left ai-message' }} bg-zinc-700 p-4 rounded-2xl relative">
+            <div class="message-text markdown-content text-white break-words whitespace-pre-wrap">{{ message.text }}</div>
 
             <hr class="block h-px border-0 border-t border-gray-600 mb-1 mt-4 p-0">
             <span class="text-sm text-slate-500">{{ moment(message.created_at).calendar() }}</span>
             <a class="text-sm text-slate-500 px-8 hover:text-slate-300"
                 href="{{ url_for('chats', chat_id=chat.id, message_id=message.id) }}">{{ message.id }}</a>
+
+            {% if message.user_message %}
+            <button class="delete-btn text-sm text-slate-500 px-8 hover:text-slate-300 cursor-pointer"
+                onclick="deleteMessage('{{ message.id }}')">Delete</button>
+            {% endif %}
+
+            {% if not message.user_message and loop.last %}
+            <button class="reprompt-btn text-sm text-slate-500 px-8 hover:text-slate-300 cursor-pointer"
+                onclick="repromptMessage('{{ message.id }}')">Reprompt</button>
+            {% endif %}
 
             <input type="hidden" class="children" value='{{ message.children | map(attribute="id") | list | tojson }}'>
             <input type="hidden" class="current-child-idx"

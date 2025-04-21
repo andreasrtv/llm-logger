@@ -8,3 +8,5 @@ fake_response.txt
 migrations/versions/*
 
 !migrations/versions/.gitkeep
+
+dump_chats.py

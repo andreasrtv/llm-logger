@@ -6,7 +6,7 @@ function sendMessage() {
   const text = document.getElementById("message-input").value.trim();
 
   if (text) {
-    const parent = document.querySelector("#message-container >div:last-child");
+    const parent = document.querySelector("#message-container .message:last-child");
 
     socket.emit("send_message", {
       chat_id: chatId,
@@ -19,6 +19,28 @@ function sendMessage() {
   }
 }
 
+function deleteMessage(messageId) {
+  const messageText = document.querySelector(`#message-${messageId} .message-text`).textContent;
+  if (
+    confirm(`Are you sure? Only do this if you made an input mistake. Message:\n\n> ${messageText.substring(0, 100)}`)
+  ) {
+    socket.emit("delete_message", {
+      chat_id: chatId,
+      message_id: messageId,
+    });
+  }
+}
+
+function repromptMessage(messageId) {
+  const messageText = document.querySelector(`#message-${messageId} .message-text`).textContent;
+  if (confirm(`Are you sure? Message:\n\n> ${messageText.substring(0, 100)}`)) {
+    socket.emit("reprompt_message", {
+      chat_id: chatId,
+      message_id: messageId,
+    });
+  }
+}
+
 socket.emit("join", chatId);
 
 socket.on("new_message", (message) => {
@@ -26,14 +48,20 @@ socket.on("new_message", (message) => {
 });
 
 socket.on("new_message_stream", (chunk) => {
-  const bubble = document.querySelector(`#message-${chunk.message_id} div`);
-  formatMessage(bubble, chunk.text);
+  const textEl = document.querySelector(`#message-${chunk.message_id} .message-text`);
+
+  if (textEl) {
+    formatMessage(textEl, chunk.text);
+  }
 });
 
 socket.on("new_message_done", (message) => {
   const bubble = document.getElementById(`message-${message.message_id}`);
-  messageDone(bubble);
-  bubble.classList.add("chat-loading-done");
+
+  if (bubble) {
+    messageDone(bubble);
+    bubble.classList.add("chat-loading-done");
+  }
 });
 
 socket.on("error", (error) => {
@@ -41,11 +69,13 @@ socket.on("error", (error) => {
     const bubble = document.getElementById(`message-${error.message_id}`);
     bubble.classList.remove("chat-loading");
     bubble.classList.add("chat-error");
-    bubble.querySelector("div").innerText += error.error;
-    bubble.querySelector("hr").remove();
-    bubble.querySelector("span").remove();
-    bubble.querySelector("a").remove();
-    bubble.scrollIntoView({ block: "center", behavior: "smooth" });
+    bubble.querySelector(".message-text").innerText += error.error;
+
+    bubble.querySelectorAll(":not(.message-text)").forEach((el) => {
+      el.remove();
+    });
+
+    bubble.scrollIntoView({ behavior: "smooth" });
   } else {
     const errorBubble = document.createElement("div");
     errorBubble.classList.add("chat-error");
@@ -62,7 +92,16 @@ socket.on("error", (error) => {
     );
     errorBubble.innerText = error.error;
     messageContainer.appendChild(errorBubble);
-    errorBubble.scrollIntoView({ block: "center", behavior: "smooth" });
+    errorBubble.scrollIntoView({ behavior: "smooth" });
+  }
+});
+
+socket.on("delete_message", (message) => {
+  const messages = [...document.querySelectorAll("#message-container >div")];
+  const messageIdx = messages.findIndex((el) => el.id === `message-${message.message_id}`);
+
+  for (let i = messages.length - 1; i >= messageIdx; i--) {
+    messages[i].remove();
   }
 });
 
@@ -70,10 +109,3 @@ document.getElementById("message-form").onsubmit = (e) => {
   e.preventDefault();
   sendMessage();
 };
-
-document.getElementById("message-input").addEventListener("keypress", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});

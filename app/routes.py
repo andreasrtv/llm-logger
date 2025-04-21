@@ -66,7 +66,8 @@ def chats(chat_id):
 
                 if message_id:
                     messages = db_utils.get_branch_messages(message_id)
-                else:
+
+                if not message_id or messages == []:
                     messages = db_utils.get_branch_messages(current_chat.messages[0].id)
             else:
                 messages = []
