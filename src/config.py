@@ -30,7 +30,7 @@ class Config:
                 "No API key provided. Either set MOCK_LLM_RESPONSES=true or provide an API key."
             )
 
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DB_URI", f"sqlite:///{os.path.join(BASE_DIR, 'database.db')}"
+    SQLALCHEMY_DATABASE_URI = (
+        f"sqlite:///{os.getenv('DB_PATH', os.path.join(BASE_DIR, 'database.db'))}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False

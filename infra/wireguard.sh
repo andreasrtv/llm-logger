@@ -22,9 +22,6 @@ PostUp = ufw route allow in on ${WG_INTERFACE} out on ${INTERFACE}
 PostUp = iptables -t nat -I POSTROUTING -o ${INTERFACE} -j MASQUERADE
 PostUp = ip6tables -t nat -I POSTROUTING -o ${INTERFACE} -j MASQUERADE
 
-# redirect HTTP to port 5000
-PostUp = ip6tables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
-
 PreDown = ufw route delete allow in on ${WG_INTERFACE} out on ${INTERFACE}
 PreDown = iptables -t nat -D POSTROUTING -o ${INTERFACE} -j MASQUERADE
 PreDown = ip6tables -t nat -D POSTROUTING -o ${INTERFACE} -j MASQUERADE

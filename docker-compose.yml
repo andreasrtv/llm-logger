@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "80:5000"
+    restart: unless-stopped
+    environment:
+      DB_PATH: "/data/database.db"
+    volumes:
+      - llm_logger_db:/data
+
+volumes:
+  llm_logger_db:

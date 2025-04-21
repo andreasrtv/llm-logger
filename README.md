@@ -3,14 +3,7 @@
 Created with the goal of logging LLM chats along with extra metadata. To be used in our bachelor thesis.
 
 # Setup
-```bash
-pip install -r requirements.txt
-
-flask db migrate
-flask db upgrade
-```
-
-## Create `.env` with relevant configging:
+## Create `./src/.env` with relevant configging:
 - `SECRET_KEY`: Random secret string for Flask sessions, for example generated with `head -c32 /dev/random | xxd -p`.
 - `MOCK_LLM_RESPONSES`: If set to `true`, all "AI" messages will be the contents of `fake_response.txt` instead of actually calling an API. Useful for debugging/testing/.
 
@@ -33,20 +26,29 @@ MOCK_LLM_RESPONSES=false
 
 AZURE_OPENAI_API_KEY="..."
 AZURE_ENDPOINT="https://[xyz].openai.azure.com/"
-AZURE_OPENAI_DEPLOYMENT_NAME="..."
+AZURE_OPENAI_DEPLOYMENT_NAME="o3-mini"
 
 OPENAI_API_KEY="..."
 OPENAI_MODEL="o3-mini"
 ```
 
+# Running
+## Docker
+Use `docker compose up -d` to run.
 
-# Development
+See the [infra](./infra/README.md) folder for notes regarding our setup.
+
+
+## Development
+Initial setup:
+```bash
+pip install -r requirements.txt
+
+flask db migrate
+flask db upgrade
+```
+
+Running
 ```bash
 flask --debug run
 ```
-
-
-# Running
-Use [run.py](./run.py) to run web server in production mode.
-
-See the [infra](./infra/README.md) folder for notes regarding our setup.
