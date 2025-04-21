@@ -87,7 +87,7 @@ def handle_reprompt_message(data):
     message_id = data["message_id"]
 
     message = db_utils.get_message(message_id)
-    if not message or message.user_message:
+    if not message or message.user_message or message.chat.completed:
         return False
 
     db_utils.edit_message(message_id, "Reasoning...")

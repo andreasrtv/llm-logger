@@ -109,6 +109,7 @@ def create_message(
     chat_id: str, text: str, user_message=True, parent_id=None
 ) -> Message:
     chat = Chat.query.get(chat_id)
+
     if chat:
         if chat.completed:
             raise ValueError("Can't send message to completed chat")
@@ -121,15 +122,16 @@ def create_message(
 
         return message
 
+
 def get_message(message_id: str) -> Message:
     return Message.query.get(message_id)
+
 
 def edit_message(message_id: str, text: str):
     message = Message.query.get(message_id)
 
     if message:
-        chat = Chat.query.get(message.chat_id)
-        if chat.completed:
+        if message.chat.completed:
             raise ValueError("Can't edit message in completed chat")
 
         message.text = text
@@ -140,6 +142,9 @@ def delete_message(message_id: str):
     message = Message.query.get(message_id)
 
     if message:
+        if message.chat.completed:
+            raise ValueError("Can't delete message in completed chat")
+
         db.session.delete(message)
         db.session.commit()
 
@@ -160,7 +165,6 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
         selected_id = uuid.UUID(message_id).bytes.hex().upper()
     except ValueError:
         return []
-    
 
     up_base = db.select(
         Message.id,
