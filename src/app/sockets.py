@@ -58,7 +58,7 @@ def handle_message(data):
         return False
 
     ws_message = user_message.to_dict()
-    ws_message["stream"] = True
+    ws_message["stream"] = False
 
     emit(
         "new_message",

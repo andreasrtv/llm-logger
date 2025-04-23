@@ -11,6 +11,7 @@
     <script src="{{ url_for('static',filename='scripts/marked.js') }}"></script>
     <script src="{{ url_for('static',filename='scripts/dompurify.js') }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/chat.css') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
     <link rel="stylesheet"
@@ -25,7 +26,7 @@
     {{ moment.locale("en-gb") }}
 </head>
 
-<body class="flex h-screen bg-zinc-900">
+<body>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     <div class="absolute left-1/2 top-20 transform -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
@@ -49,7 +50,7 @@
     {% endwith %}
 
     {% if user %}
-    <div class="w-96 bg-zinc-950 text-white p-4 h-full flex flex-col">
+    <div class="sidebar">
         {% include "sidebar-chats.html" %}
     </div>
     {% endif %}
@@ -57,7 +58,7 @@
     {% block content %}{% endblock %}
 
     {% if chat %}
-    <div class="w-96 bg-zinc-950 text-white p-4 h-full flex flex-col">
+    <div class="sidebar">
         {% include "sidebar-options.html" %}
     </div>
     {% endif %}

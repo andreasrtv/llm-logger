@@ -1,48 +1,42 @@
 <h1 class="text-3xl font-semibold text-center">Chat Info</h1>
-<a class="text-center text-sm text-slate-500 px-8 hover:text-slate-300 pb-4"
-    href="{{ url_for('chats', chat_id=chat.id) }}">{{ chat.id }}</a>
+<a class="text-center message-footer px-8 hover:text-slate-300 pb-4" href="{{ url_for('chats', chat_id=chat.id) }}">{{
+    chat.id }}</a>
 
 <div class="flex flex-col justify-start flex-1 overflow-y-auto ">
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-wrap gap-1">
         <label class="font-bold basis-full">Chat Title</label>
-        <input name="title" type="text" value="{{ chat.title }}"
-            class="p-2 border rounded-xl bg-zinc-700 text-white grow"></input>
-        <button type="submit"
-            class="bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer">Change</button>
+        <input name="title" type="text" value="{{ chat.title }}" class="small-input grow"></input>
+        <button type="submit" class="button-default">Change</button>
     </form>
 
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-col gap-1">
         <label class="font-bold">Chat Notes</label>
-        <textarea id="message-input" type="text" name="notes" class="p-2 border rounded-xl bg-zinc-700 text-white"
+        <textarea id="message-input" type="text" name="notes" class="small-input"
             rows="{{ '12' if chat.completed else 4}}">{{ chat.notes if chat.notes }}</textarea>
-        <button type="submit"
-            class="bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer">Update</button>
+        <button type="submit" class="button-default">Update</button>
     </form>
 
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}" class="flex flex-col gap-1">
         <label class="font-bold">System prompt</label>
-        <textarea id="message-input" type="text" name="system_prompt"
-            class="p-2 border rounded-xl bg-zinc-700 text-white" rows="4" {{ 'disabled' if chat.messages
-            }}>{{ chat.system_prompt if chat.system_prompt }}</textarea>
+        <textarea id="message-input" type="text" name="system_prompt" class="small-input" rows="4" {{ 'disabled' if
+            chat.messages }}>{{ chat.system_prompt if chat.system_prompt }}</textarea>
         {% if not chat.messages %}
-        <button type="submit"
-            class="bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer">Update</button>
+        <button type="submit" class="button-default">Update</button>
         {% endif %}
     </form>
 
     {% if chat.tags %}
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <div>
         <label class="font-bold">Tags</label><br>
         <div class="flex flex-wrap gap-2 mt-1">
             {% for tag in chat.tags %}
-            <button name="tag" class="tag bg-gray-500 text-white p-2 rounded-xl text-center
-                onclick=" event.preventDefault();">
+            <button name="tag" class="tag button-default" onclick=" event.preventDefault();">
                 {{ tag.text }}
             </button>
             {% endfor %}
@@ -50,20 +44,19 @@
     </div>
     {% endif %}
 
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}"
         onsubmit="return confirm('Are you sure you want to add this tag?');">
         <label class="font-bold">Add tag</label><br>
         <input type="text" name="tag" placeholder="Search..." id="tag-search" onkeyup="filterTags();"
-            class="p-2 border rounded-xl bg-zinc-700 text-white">
-        <button type="submit" id="tag-add" disabled
-            class="bg-gray-800 text-gray-400 p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer">
+            class="small-input">
+        <button type="submit" id="tag-add" disabled class="button-disabled">
             Add tag
         </button>
         <div id="add-tags-container" class="flex flex-wrap gap-2 mt-4">
             {% for tag in tags %}
-            <button class="tag bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer"
+            <button class="tag button-default"
                 onclick="event.preventDefault(); document.getElementById('tag-search').value = this.textContent.trim(); filterTags();">
                 {{ tag.text }}
             </button>
@@ -72,30 +65,27 @@
     </form>
 
     {% if not chat.completed %}
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}"
         onsubmit="return confirm('Are you sure you want to complete this chat?');">
         <input type="hidden" name="completed" value="True">
-        <button type="submit"
-            class="bg-gray-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer w-full">
+        <button type="submit" class="button-default" style="width: 100%;">
             Complete Chat</button>
     </form>
 
-    <hr class="block h-px border-0 border-t border-gray-600 my-4 p-0">
+    <hr class="divider sidebar-divider">
 
     <form method="POST" action="{{ url_for('chats', chat_id=chat.id) }}"
         onsubmit="return confirm('Are you sure you want to delete this chat?');">
         <input type="hidden" name="deleted" value="True">
-        <button type="submit"
-            class="bg-red-500 text-white p-2 rounded-xl text-center hover:bg-gray-700 cursor-pointer w-full">
+        <button type="submit" class="button-warning" style="width: 100%;">
             Delete Chat</button>
     </form>
     {% endif %}
 </div>
 
-<a href="{{ url_for('admin') }}"
-    class="bg-gray-500 text-white p-2 rounded-xl text-center mt-4 block hover:bg-gray-700 cursor-pointer">
+<a href="{{ url_for('admin') }}" class="button-default">
     Admin Panel
 </a>
 
@@ -112,20 +102,20 @@
             txtValue = btn.textContent.trim().toLowerCase();
 
             if (txtValue.indexOf(filter) >= 0) {
-                btn.classList.remove("hidden");
+                btn.style.display = "inline-block";
 
                 if (txtValue === filter) {
                     validTagSelected = true;
                     addTagButton.disabled = false;
-                    addTagButton.classList.remove("bg-gray-800", "text-gray-400");
-                    addTagButton.classList.add("bg-gray-500", "text-white");
+                    addTagButton.classList.remove("button-disabled");
+                    addTagButton.classList.add("button-default");
                 } else if (!validTagSelected) {
                     addTagButton.disabled = true;
-                    addTagButton.classList.remove("bg-gray-500", "text-white");
-                    addTagButton.classList.add("bg-gray-800", "text-gray-400");
+                    addTagButton.classList.remove("button-default");
+                    addTagButton.classList.add("button-disabled");
                 }
             } else {
-                btn.classList.add("hidden");
+                btn.style.display = "none";
             }
         });
     }

@@ -78,18 +78,7 @@ socket.on("error", (error) => {
     bubble.scrollIntoView({ behavior: "smooth" });
   } else {
     const errorBubble = document.createElement("div");
-    errorBubble.classList.add("chat-error");
-    errorBubble.classList.add(
-      "float-left",
-      "ai-message",
-      "mb-4",
-      "w-2/3",
-      "p-4",
-      "rounded-2xl",
-      "relative",
-      "chat-error",
-      "text-white"
-    );
+    errorBubble.classList.add("ai-message", "chat-error");
     errorBubble.innerText = error.error;
     messageContainer.appendChild(errorBubble);
     errorBubble.scrollIntoView({ behavior: "smooth" });

@@ -3,8 +3,6 @@ const forkSVG = `<svg width="24px" height="24px" fill="#ffffff" xmlns="http://ww
 const arrowLeftSVG = `<svg fill=" #ffffff" width="12px" height="12px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"> <path d="M23.505 0c0.271 0 0.549 0.107 0.757 0.316 0.417 0.417 0.417 1.098 0 1.515l-14.258 14.264 14.050 14.050c0.417 0.417 0.417 1.098 0 1.515s-1.098 0.417-1.515 0l-14.807-14.807c-0.417-0.417-0.417-1.098 0-1.515l15.015-15.022c0.208-0.208 0.486-0.316 0.757-0.316z"> </path> </svg>`;
 const arrowRightSVG = `<svg fill=" #ffffff" width="12px" height="12px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"> <path d="M8.489 31.975c-0.271 0-0.549-0.107-0.757-0.316-0.417-0.417-0.417-1.098 0-1.515l14.258-14.264-14.050-14.050c-0.417-0.417-0.417-1.098 0-1.515s1.098-0.417 1.515 0l14.807 14.807c0.417 0.417 0.417 1.098 0 1.515l-15.015 15.022c-0.208 0.208-0.486 0.316-0.757 0.316z"> </path></svg>`;
 
-const forkArrowsCSS = ["inline-flex", "items-center", "justify-center", "p-2", "rounded-lg"];
-
 function addCopyButton(codeBlock) {
   const button = document.createElement("button");
   button.classList.add("copy-btn");
@@ -55,7 +53,6 @@ function newFork(event) {
     }
 
     const forkPages = bubble.querySelector(".fork-pages");
-    forkPages.classList.remove("hidden");
 
     const text = forkPages.querySelector("span");
     const lastPage = parseInt(text.textContent.split("/")[1]) + 1;
@@ -67,14 +64,15 @@ function newFork(event) {
     arrows[0].href = `${arrows[0].href.split("?")[0]}?message_id=${childrenIds[childrenIds.length - 1]}`;
     arrows[1].href = `${arrows[1].href.split("?")[0]}?message_id=${childrenIds[0]}`;
 
-    forkPages.classList.remove("hidden");
+    forkPages.style.display = "flex";
     bubble.scrollIntoView({ block: "end", behavior: "smooth" });
   }
 }
 
 function addForkButton(bubble) {
   const forkButton = document.createElement("button");
-  forkButton.classList.add("fork-btn", "hidden");
+  forkButton.classList.add("fork-btn");
+  forkButton.style.display = "none";
   forkButton.innerHTML = forkSVG;
   bubble.appendChild(forkButton);
 
@@ -83,21 +81,21 @@ function addForkButton(bubble) {
 
 function addForkPages(bubble) {
   const forkPages = document.createElement("div");
-  forkPages.classList.add("fork-pages", "float-right", "flex", "flex-row");
+  forkPages.classList.add("fork-pages");
   bubble.appendChild(forkPages);
 
   const backArrow = document.createElement("a");
   backArrow.innerHTML = arrowLeftSVG;
-  backArrow.classList.add(...forkArrowsCSS);
+  backArrow.classList.add("fork-arrows");
   forkPages.appendChild(backArrow);
 
   const text = document.createElement("span");
-  text.classList.add("text-white");
+  text.style.color = "#ffffff";
   forkPages.appendChild(text);
 
   const forwardArrow = document.createElement("a");
   forwardArrow.innerHTML = arrowRightSVG;
-  forwardArrow.classList.add(...forkArrowsCSS);
+  forwardArrow.classList.add("fork-arrows");
   forkPages.appendChild(forwardArrow);
 
   updateForkPages(bubble);
@@ -124,13 +122,13 @@ function updateForkPages(bubble, newChild = null) {
   }
 
   if (childrenIds.length != 0) {
-    bubble.querySelector(".fork-btn")?.classList.remove("hidden");
+    bubble.querySelector(".fork-btn").style.display = "inline-block";
   }
 
   if (isNaN(currChildIdx) || childrenIds.length <= 1) {
-    forkPages.classList.add("hidden");
+    forkPages.style.display = "none";
   } else {
-    forkPages.classList.remove("hidden");
+    forkPages.style.display = "flex";
   }
 
   const hrefBase = `${window.location.pathname}?message_id=`;
@@ -166,36 +164,26 @@ function newMessage(message) {
 
   const bubble = document.createElement("div");
   bubble.id = `message-${message.id}`;
-  bubble.classList.add(
-    "message",
-    ...(message.user_message ? ["float-right", "user-message"] : ["float-left", "ai-message", "chat-loading"]),
-
-    "mb-4",
-    "w-2/3",
-    "bg-zinc-700",
-    "p-4",
-    "rounded-2xl",
-    "relative"
-  );
+  bubble.classList.add("message", ...(message.user_message ? ["user-message"] : ["ai-message", "chat-loading"]));
 
   const text = document.createElement("div");
-  text.classList.add("message-text", "text-white", "markdown-content", "break-words", "whitespace-pre-wrap");
+  text.classList.add("message-text", "markdown-content");
   text.textContent = message.text;
 
   const hr = document.createElement("hr");
-  hr.classList.add("block", "h-px", "border-0", "border-t", "border-gray-600", "mb-1", "mt-4", "p-0");
+  hr.classList.add("divider", "message-divider");
 
   const date = document.createElement("span");
-  date.classList.add("text-sm", "text-slate-500");
+  date.classList.add("message-footer");
   date.textContent = moment().calendar(message.created_at);
 
   const clickableId = document.createElement("a");
-  clickableId.classList.add("text-sm", "text-slate-500", "px-8", "hover:text-slate-300");
+  clickableId.classList.add("message-footer", "message-footer-clickable");
   clickableId.href = `${window.location.pathname}?message_id=${message.id}`;
   clickableId.textContent = `${message.id}`;
 
   const modifyButton = document.createElement("button");
-  modifyButton.classList.add("text-sm", "text-slate-500", "px-8", "hover:text-slate-300", "cursor-pointer");
+  modifyButton.classList.add("message-footer", "message-footer-clickable");
 
   if (message.user_message) {
     modifyButton.classList.add("delete-btn");
