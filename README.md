@@ -34,9 +34,9 @@ OPENAI_MODEL="o3-mini"
 
 # Running
 ## Docker
-Use `docker compose up -d` to run.
+Use `docker compose up -d` to run, after creating `./src/.env` file.
 
-See the [infra](./infra/README.md) folder for notes regarding our setup.
+**Should not be publicly exposed in any way**, as the application does not implement any form of authorization - all users are admins and anyone can register a user. For our use case we've hosted LLM Logger behind a WireGuard VPN. See the [infra](./infra/README.md) folder for notes regarding our setup.
 
 
 ## Development

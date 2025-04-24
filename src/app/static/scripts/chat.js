@@ -145,7 +145,7 @@ function formatMessage(textEl, rawText = null) {
   textEl.innerHTML = DOMPurify.sanitize(marked.parse(prettyContent));
 }
 
-function messageDone(bubble) {
+function messageDone(bubble, scroll = true) {
   bubble.classList.remove("chat-loading");
 
   document.querySelectorAll(`#${bubble.id} pre code`).forEach((el) => {
@@ -154,7 +154,9 @@ function messageDone(bubble) {
     hljs.highlightElement(el);
   });
 
-  bubble.scrollIntoView({ behavior: "smooth" });
+  if (scroll) {
+    bubble.scrollIntoView({ behavior: "smooth" });
+  }
 }
 
 function newMessage(message) {
@@ -255,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll("#message-container .message").forEach((bubble) => {
     formatMessage(bubble.querySelector(".message-text"));
-    messageDone(bubble);
+    messageDone(bubble, false);
   });
 
   const messageId = new URLSearchParams(window.location.search).get("message_id");
