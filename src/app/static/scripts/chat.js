@@ -122,7 +122,10 @@ function updateForkPages(bubble, newChild = null) {
   }
 
   if (childrenIds.length != 0) {
-    bubble.querySelector(".fork-btn").style.display = "inline-block";
+    const forkBtn = bubble.querySelector(".fork-btn");
+    if (forkBtn) {
+      forkBtn.style.display = "inline-block";
+    }
   }
 
   if (isNaN(currChildIdx) || childrenIds.length <= 1) {
