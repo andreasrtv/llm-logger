@@ -109,14 +109,17 @@ def edit_user():
         for key, value in request.form.to_dict(flat=False).items()
     }
 
-    db_utils.edit_user(current_user.id, **form_data)
+    user = db_utils.edit_user(current_user.id, **form_data)
 
-    if "option_show_completed" in form_data:
-        if not db_utils.get_own_chats(
-            current_user.id, completed=current_user.option_show_completed
-        ):
-            db_utils.edit_user(current_user.id, option_show_completed=False)
-            flash("No completed chats to show")
+    if user.option_show_completed:
+        if user.option_show_all:
+            if not db_utils.get_all_chats(completed=True):
+                db_utils.edit_user(current_user.id, option_show_completed=False)
+                flash("No completed chats to show")
+        else:
+            if not db_utils.get_own_chats(current_user.id, completed=True):
+                db_utils.edit_user(current_user.id, option_show_completed=False)
+                flash("No completed chats to show (for your user)")
 
     return redirect(url_for("home"))
 

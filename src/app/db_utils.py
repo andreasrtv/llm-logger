@@ -21,13 +21,14 @@ def get_user_by(username=None, user_id=None) -> User:
         return User.query.filter_by(username=username).first()
 
 
-def edit_user(user_id: str, **kwargs):
+def edit_user(user_id: str, **kwargs) -> User:
     user = User.query.get(user_id)
 
     if user:
         for key, value in kwargs.items():
             setattr(user, key, value)
         db.session.commit()
+        return user
 
 
 def create_chat(user_id: str) -> str:
