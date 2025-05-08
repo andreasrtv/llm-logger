@@ -4,77 +4,69 @@ from werkzeug.security import generate_password_hash
 import uuid
 
 
-def create_user(username: str, password: str) -> User:
-    password_hash = generate_password_hash(password)
-    new_user = User(username=username, password_hash=password_hash)
-
-    db.session.add(new_user)
+def commit(obj=None):
+    if obj:
+        db.session.add(obj)
     db.session.commit()
+    return obj
 
-    return new_user
+
+def create_user(username: str, password: str) -> User:
+    user = User(username=username, password_hash=generate_password_hash(password))
+    return commit(user)
 
 
-def get_user_by(username=None, user_id=None) -> User:
+def get_user_by(username: str = None, user_id: str = None) -> User:
     if user_id:
         return User.query.get(user_id)
-    elif username:
+    if username:
         return User.query.filter_by(username=username).first()
+    return None
 
 
-def edit_user(user_id: str, **kwargs) -> User:
-    user = User.query.get(user_id)
-
-    if user:
-        for key, value in kwargs.items():
-            setattr(user, key, value)
-        db.session.commit()
-        return user
+def edit_user(user_id: str, **attrs) -> User:
+    user = get_user_by(user_id=user_id)
+    if not user:
+        return None
+    for key, val in attrs.items():
+        setattr(user, key, val)
+    db.session.commit()
+    return user
 
 
 def create_chat(user_id: str) -> str:
     user = get_user_by(user_id=user_id)
-
-    if user.default_system_prompt:
-        chat = Chat(user_id=user_id, system_prompt=user.default_system_prompt)
-    else:
-        chat = Chat(user_id=user_id)
-
-    db.session.add(chat)
-    db.session.commit()
-
-    return chat.id
+    prompt = getattr(user, "default_system_prompt", None)
+    chat = (
+        Chat(user_id=user_id, system_prompt=prompt) if prompt else Chat(user_id=user_id)
+    )
+    return commit(chat).id
 
 
-def get_all_chats(deleted=False, completed=False) -> list[Chat]:
-    return (
-        Chat.query.filter_by(deleted=deleted, completed=completed)
-        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
-        .all()
+def _base_chats(deleted: bool = False, completed: bool = False, user_id: str = None):
+    query = Chat.query.filter_by(deleted=deleted, completed=completed)
+    if user_id:
+        query = query.filter_by(user_id=user_id)
+    return query.order_by(
+        db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc()
     )
 
 
-def get_own_chats(user_id: str, deleted=False, completed=False) -> list[Chat]:
-    return (
-        Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
-        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
-        .all()
-    )
+def get_chats(
+    user_id: str = None, deleted: bool = False, completed: bool = False
+) -> list[Chat]:
+    if user_id:
+        return _base_chats(deleted, completed, user_id).all()
+
+    return _base_chats(deleted, completed).all()
 
 
-def get_newest_chat(deleted=False, completed=False) -> Chat:
-    return (
-        Chat.query.filter_by(deleted=deleted, completed=completed)
-        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
-        .first()
-    )
-
-
-def get_own_newest_chat(user_id: str, deleted=False, completed=False) -> Chat:
-    return (
-        Chat.query.filter_by(deleted=deleted, completed=completed, user_id=user_id)
-        .order_by(db.func.coalesce(Chat.newest_message_at, Chat.created_at).desc())
-        .first()
-    )
+def get_newest_chat(
+    user_id: str = None, deleted: bool = False, completed: bool = False
+) -> Chat:
+    if user_id:
+        return _base_chats(deleted, completed, user_id).first()
+    return _base_chats(deleted, completed).first()
 
 
 def get_chat(chat_id: str) -> Chat:
@@ -82,46 +74,42 @@ def get_chat(chat_id: str) -> Chat:
 
 
 def edit_chat(chat_id: str, **kwargs):
-    chat = Chat.query.get(chat_id)
+    chat = get_chat(chat_id)
+    if not chat:
+        return None
 
-    if chat:
-        if (
-            "system_prompt" in kwargs
-            and Message.query.filter_by(chat_id=chat_id).count() != 0
-        ):
-            raise ValueError(
-                "The system prompt can't be changed after the chat has started"
-            )
+    if "system_prompt" in kwargs and chat.messages:
+        raise ValueError(
+            "The system prompt can't be changed after the chat has started"
+        )
 
-        for key, value in kwargs.items():
-            if key == "tag":
-                tag = Tag.query.filter_by(text=value).first()
-                if tag:
-                    chat.tags.append(tag)
-                else:
-                    raise ValueError(f"Tag '{value}' does not exist")
-            else:
-                setattr(chat, key, value)
+    for k, v in kwargs.items():
+        if k == "tag":
+            tag = Tag.query.filter_by(text=v).first()
+            if not tag:
+                raise ValueError(f"Tag '{v}' does not exist")
+            chat.tags.append(tag)
+        else:
+            setattr(chat, k, v)
 
-        db.session.commit()
+    db.session.commit()
+    return chat
 
 
 def create_message(
-    chat_id: str, text: str, user_message=True, parent_id=None
+    chat_id: str, text: str, user_message: bool = True, parent_id: str = None
 ) -> Message:
-    chat = Chat.query.get(chat_id)
+    chat = get_chat(chat_id)
+    if not chat:
+        return None
 
-    if chat:
-        if chat.completed:
-            raise ValueError("Can't send message to completed chat")
+    if chat.completed:
+        raise ValueError("Can't send message to completed chat")
 
-        message = Message(
-            chat_id=chat_id, user_message=user_message, text=text, parent_id=parent_id
-        )
-        db.session.add(message)
-        db.session.commit()
-
-        return message
+    msg = Message(
+        chat_id=chat_id, user_message=user_message, text=text, parent_id=parent_id
+    )
+    return commit(msg)
 
 
 def get_message(message_id: str) -> Message:
@@ -129,25 +117,28 @@ def get_message(message_id: str) -> Message:
 
 
 def edit_message(message_id: str, text: str):
-    message = Message.query.get(message_id)
+    msg = get_message(message_id)
+    if not msg:
+        return None
 
-    if message:
-        if message.chat.completed:
-            raise ValueError("Can't edit message in completed chat")
+    if msg.chat.completed:
+        raise ValueError("Can't edit message in completed chat")
 
-        message.text = text
-        db.session.commit()
+    msg.text = text
+    db.session.commit()
+    return msg
 
 
 def delete_message(message_id: str):
-    message = Message.query.get(message_id)
+    msg = get_message(message_id)
+    if not msg:
+        return None
 
-    if message:
-        if message.chat.completed:
-            raise ValueError("Can't delete message in completed chat")
+    if msg.chat.completed:
+        raise ValueError("Can't delete message in completed chat")
 
-        db.session.delete(message)
-        db.session.commit()
+    db.session.delete(msg)
+    db.session.commit()
 
 
 def get_tags() -> list[Tag]:
@@ -156,9 +147,7 @@ def get_tags() -> list[Tag]:
 
 def create_tag(text: str):
     tag = Tag(text=text)
-
-    db.session.add(tag)
-    db.session.commit()
+    return commit(tag)
 
 
 def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
@@ -235,3 +224,25 @@ def get_branch_messages(message_id: str) -> list[(Message, list[str])]:
     results = db.session.query(Message).from_statement(final_query).all()
 
     return results
+
+
+def parse_bool_values(data):
+    return {
+        key: (value.lower() == "true" if value.lower() in ["true", "false"] else value)
+        for key, value in data.items()
+    }
+
+
+def get_chats_for_user(user, newest=False):
+    if newest:
+        return (
+            get_newest_chat(completed=user.option_show_completed)
+            if user.option_show_all
+            else get_newest_chat(user_id=user.id, completed=user.option_show_completed)
+        )
+
+    return (
+        get_chats(completed=user.option_show_completed)
+        if user.option_show_all
+        else get_chats(user_id=user.id, completed=user.option_show_completed)
+    )

@@ -1,7 +1,7 @@
 from app import db_utils, llm, login_manager, socketio
 from flask_login import current_user
 from flask_socketio import close_room, emit, join_room, rooms
-import sqlalchemy
+import functools
 
 
 @login_manager.user_loader
@@ -9,85 +9,77 @@ def load_user(user_id):
     return db_utils.get_user_by(user_id=user_id)
 
 
+def require_auth(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return False
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
 @socketio.on("connect")
+@require_auth
 def handle_connect():
-    if not current_user.is_authenticated:
-        return False
+    return True
 
 
 @socketio.on("join")
+@require_auth
 def on_join(chat_id):
-    if not current_user.is_authenticated:
-        return False
-
-    for room in rooms():
-        close_room(room)
-
+    for r in rooms():
+        close_room(r)
     join_room(str(chat_id))
 
 
 @socketio.on("leave")
+@require_auth
 def on_leave(chat_id):
-    if not current_user.is_authenticated:
-        return False
-
     close_room(str(chat_id))
 
 
 @socketio.on("send_message")
+@require_auth
 def handle_message(data):
-    if not current_user.is_authenticated:
-        return False
-
-    chat_id = data["chat_id"]
-    text = data["text"]
-    parent_id = data.get("parent_id", None)
+    chat_id = data.get("chat_id")
+    text = data.get("text")
+    parent_id = data.get("parent_id")
 
     try:
-        user_message = db_utils.create_message(chat_id, text, parent_id=parent_id)
-        llm_message = db_utils.create_message(
-            user_message.chat_id,
+        user_msg = db_utils.create_message(chat_id, text, parent_id=parent_id)
+        llm_msg = db_utils.create_message(
+            chat_id,
             "Reasoning...",
             user_message=False,
-            parent_id=user_message.id,
+            parent_id=user_msg.id,
         )
     except ValueError:
         return False
 
-    if not user_message or not llm_message:
+    if not user_msg or not llm_msg:
         return False
 
-    ws_message = user_message.to_dict()
-    ws_message["stream"] = False
+    msg = user_msg.to_dict()
+    msg["stream"] = False
+    emit("new_message", msg, room=str(chat_id))
 
-    emit(
-        "new_message",
-        ws_message,
-        room=str(chat_id),
-    )
+    msg = llm_msg.to_dict()
+    msg["stream"] = True
+    emit("new_message", msg, room=str(chat_id))
 
-    ws_message = llm_message.to_dict()
-    ws_message["stream"] = True
-
-    emit(
-        "new_message",
-        ws_message,
-        room=str(llm_message.chat_id),
-    )
-
-    send_message_stream(llm_message)
+    _stream_response(llm_msg)
 
 
 @socketio.on("reprompt_message")
-def handle_reprompt_message(data):
-    if not current_user.is_authenticated:
-        return False
+@require_auth
+def handle_reprompt(data):
+    chat_id = data.get("chat_id")
+    message_id = data.get("message_id")
 
-    chat_id = data["chat_id"]
-    message_id = data["message_id"]
+    msg = db_utils.get_message(message_id)
 
-    message = db_utils.get_message(message_id)
-    if not message or message.user_message or message.chat.completed:
+    if not msg or msg.user_message or msg.chat.completed:
         return False
 
     db_utils.edit_message(message_id, "Reasoning...")
@@ -97,16 +89,14 @@ def handle_reprompt_message(data):
         room=str(chat_id),
     )
 
-    send_message_stream(message)
+    _stream_response(msg)
 
 
 @socketio.on("delete_message")
-def handle_delete_message(data):
-    if not current_user.is_authenticated:
-        return False
-
-    chat_id = data["chat_id"]
-    message_id = data["message_id"]
+@require_auth
+def handle_delete(data):
+    chat_id = data.get("chat_id")
+    message_id = data.get("message_id")
 
     try:
         db_utils.delete_message(message_id)
@@ -120,31 +110,14 @@ def handle_delete_message(data):
     )
 
 
-def send_message_stream(message):
-    message_id = message.id
-    chat_id = message.chat_id
+def _stream_response(message):
+    mid = message.id
+    cid = str(message.chat_id)
 
     try:
         for chunk in llm.respond(message):
-            emit(
-                "new_message_stream",
-                {"text": chunk, "message_id": message.id},
-                room=str(message.chat_id),
-            )
+            emit("new_message_stream", {"text": chunk, "message_id": mid}, room=cid)
 
-        emit(
-            "new_message_done",
-            {"message_id": message.id},
-            room=str(message.chat_id),
-        )
+        emit("new_message_done", {"message_id": mid}, room=cid)
     except Exception as e:
-        emit(
-            "error",
-            {
-                "error": str(e),
-                "message_id": message_id,
-            },
-            room=str(chat_id),
-        )
-
-        return
+        emit("error", {"error": str(e), "message_id": mid}, room=cid)

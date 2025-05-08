@@ -7,52 +7,54 @@ if not Config.MOCK_LLM_RESPONSES:
 
 def mock_query():
     sleep(0.5)
-    message = Config.FAKE_RESPONSE.split(" ")
+    words = Config.FAKE_RESPONSE.split()
 
-    for x in range(len(message)):
-        yield " ".join(message[: x + 1])
+    for x, _ in enumerate(words):
+        yield " ".join(words[: x + 1])
         sleep(0.08)
 
 
-def query(message):
+def build_conversation(message):
     chat = db_utils.get_chat(message.chat_id)
-    messages = db_utils.get_branch_messages(message.parent.id)
-    conversation = []
+    msgs = db_utils.get_branch_messages(message.parent.id)
+    conv = []
 
     if chat.system_prompt:
-        conversation.append({"role": "developer", "content": chat.system_prompt})
+        conv.append({"role": "developer", "content": chat.system_prompt})
 
-    conversation += [
+    conv.extend(
         {"role": "user" if m.user_message else "assistant", "content": m.text}
-        for m in messages
-        if m.text != ""
-    ]
+        for m in msgs
+        if m.text
+    )
+
+    return conv
+
+
+def query(message):
+    conversation = build_conversation(message)
 
     try:
         stream = openai_client.chat.completions.create(
             messages=conversation, model=Config.AI_MODEL, stream=True
         )
-    except Exception as e:
+    except Exception:
         db_utils.delete_message(message.id)
-        raise e
+        raise
 
     response = ""
-
     try:
         for chunk in stream:
-            if len(chunk.choices) == 0:
+            if not chunk.choices:
                 continue
-
-            chunked_response = chunk.choices[0].delta.content
-            if chunked_response:
-                response += chunked_response
-
+            delta = chunk.choices[0].delta.content
+            if delta:
+                response += delta
                 yield response
-    except Exception as e:
-        if response and type(response) == str:
+    except Exception:
+        if isinstance(response, str):
             db_utils.edit_message(message.id, response)
-
-        raise e
+        raise
 
 
 def respond(message):
@@ -61,9 +63,10 @@ def respond(message):
     else:
         stream = query(message)
 
+    response = ""
+
     for x, response in enumerate(stream):
         yield response
-
         if x % 20 == 0:
             db_utils.edit_message(message.id, response)
 

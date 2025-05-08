@@ -12,130 +12,99 @@ def load_user(user_id):
 @app.route("/")
 @login_required
 def home():
-    if current_user.option_show_all:
-        newest_chat = db_utils.get_newest_chat(
-            completed=current_user.option_show_completed
-        )
-    else:
-        newest_chat = db_utils.get_own_newest_chat(
-            current_user.id, completed=current_user.option_show_completed
-        )
+    newest = db_utils.get_chats_for_user(current_user, newest=True)
 
-    if newest_chat:
-        return redirect(url_for("chats", chat_id=newest_chat.id))
-    return redirect(url_for("new_chat"))
+    return (
+        redirect(url_for("chats", chat_id=newest.id))
+        if newest
+        else redirect(url_for("new_chat"))
+    )
 
 
 @app.route("/chats/<chat_id>", methods=["GET", "POST"])
 @login_required
 def chats(chat_id):
     if request.method == "POST":
-        form_data = {
-            key: (
-                value.lower() == "true" if value.lower() in ["true", "false"] else value
-            )
-            for key, value in request.form.to_dict().items()
-        }
+        data = db_utils.parse_bool_values(request.form.to_dict())
 
         try:
-            db_utils.edit_chat(chat_id, **form_data)
+            db_utils.edit_chat(chat_id, **data)
         except ValueError as e:
             flash(str(e))
 
-        if "deleted" in form_data:
+        if data.get("deleted"):
             db_utils.edit_user(current_user.id, option_show_completed=False)
             return redirect(url_for("home"))
-        elif "completed" in form_data:
+        if data.get("completed"):
             db_utils.edit_user(current_user.id, option_show_completed=True)
             return redirect(url_for("home"))
 
         return redirect(url_for("chats", chat_id=chat_id))
-    else:
-        if current_user.option_show_all:
-            chats = db_utils.get_all_chats(completed=current_user.option_show_completed)
-        else:
-            chats = db_utils.get_own_chats(
-                current_user.id, completed=current_user.option_show_completed
-            )
 
-        current_chat = next((chat for chat in chats if chat.id == chat_id), None)
+    # GET
+    chats_list = db_utils.get_chats_for_user(current_user)
+    current_chat = next((c for c in chats_list if c.id == chat_id), None)
 
-        if current_chat:
-            if len(current_chat.messages) != 0:
-                message_id = request.args.get("message_id", None)
-
-                if message_id:
-                    messages = db_utils.get_branch_messages(message_id)
-
-                if not message_id or messages == []:
-                    messages = db_utils.get_branch_messages(current_chat.messages[0].id)
-            else:
-                messages = []
-
-            return render_template(
-                "chat.html",
-                chats=chats,
-                chat=current_chat,
-                messages=messages,
-                user=current_user,
-                tags=sorted(
-                    list(set(db_utils.get_tags()) - set(current_chat.tags)),
-                    key=lambda t: t.text.lower(),
-                ),
-            )
-        elif not current_chat and current_user.option_show_completed:
+    if not current_chat:
+        if current_user.option_show_completed:
             db_utils.edit_user(current_user.id, option_show_completed=False)
             return redirect(url_for("home"))
-        else:
-            return redirect(url_for("new_chat"))
+        return redirect(url_for("new_chat"))
+
+    messages = []
+    if current_chat.messages:
+        msg_id = request.args.get("message_id")
+        messages = (
+            db_utils.get_branch_messages(msg_id)
+            if msg_id and db_utils.get_branch_messages(msg_id)
+            else db_utils.get_branch_messages(current_chat.messages[0].id)
+        )
+
+    all_tags = set(db_utils.get_tags())
+    available_tags = sorted(
+        all_tags - set(current_chat.tags), key=lambda t: t.text.lower()
+    )
+
+    return render_template(
+        "chat.html",
+        chats=chats_list,
+        chat=current_chat,
+        messages=messages,
+        user=current_user,
+        tags=available_tags,
+    )
 
 
 @app.route("/chats/new")
 @login_required
 def new_chat():
-    new_id = db_utils.create_chat(current_user.id)
-    return redirect(url_for("chats", chat_id=new_id))
+    chat_id = db_utils.create_chat(current_user.id)
+    return redirect(url_for("chats", chat_id=chat_id))
 
 
 @app.route("/users/me", methods=["POST"])
 @login_required
 def edit_user():
-    form_data = {
-        key: (
-            max(value).lower() == "true"
-            if max(value).lower() in ["true", "false"]
-            else max(value)
-        )
-        for key, value in request.form.to_dict(flat=False).items()
-    }
+    raw_data = request.form.to_dict(flat=False)
+    data = db_utils.parse_bool_values({k: v[-1] for k, v in raw_data.items()})
 
-    user = db_utils.edit_user(current_user.id, **form_data)
+    user = db_utils.edit_user(current_user.id, **data)
 
     if user.option_show_completed:
-        if user.option_show_all:
-            if not db_utils.get_all_chats(completed=True):
-                db_utils.edit_user(current_user.id, option_show_completed=False)
-                flash("No completed chats to show")
-        else:
-            if not db_utils.get_own_chats(current_user.id, completed=True):
-                db_utils.edit_user(current_user.id, option_show_completed=False)
-                flash("No completed chats to show (for your user)")
+        has_chats = (
+            db_utils.get_chats(completed=True)
+            if user.option_show_all
+            else db_utils.get_chats(user_id=current_user.id, completed=True)
+        )
 
-    return redirect(url_for("home"))
-
-
-@app.route("/admin/tags", methods=["GET", "POST"])
-@login_required
-def tags():
-    if request.method == "POST":
-        text = request.form["text"]
-        if text:
-            try:
-                db_utils.create_tag(text)
-            except Exception as e:
-                if type(e).__qualname__ == "IntegrityError":
-                    flash("Tag already exists")
-                    return redirect(url_for("admin"))
+        if not has_chats:
+            db_utils.edit_user(current_user.id, option_show_completed=False)
+            msg = (
+                "No completed chats to show"
+                if user.option_show_all
+                else "No completed chats to show (for your user)"
+            )
+            flash(msg)
 
     return redirect(url_for("home"))
 
@@ -143,14 +112,24 @@ def tags():
 @app.route("/admin")
 @login_required
 def admin():
-    if current_user.option_show_all:
-        chats = db_utils.get_all_chats(completed=current_user.option_show_completed)
-    else:
-        chats = db_utils.get_own_chats(
-            current_user.id, completed=current_user.option_show_completed
-        )
+    return render_template(
+        "admin.html",
+        chats=db_utils.get_chats_for_user(current_user),
+        user=current_user,
+    )
 
-    return render_template("admin.html", chats=chats, user=current_user)
+
+@app.route("/admin/tags", methods=["POST"])
+@login_required
+def tags():
+    text = request.form.get("text", "").strip()
+    if text:
+        try:
+            db_utils.create_tag(text)
+        except Exception as e:
+            if "IntegrityError" in type(e).__qualname__:
+                flash("Tag already exists")
+    return redirect(url_for("home"))
 
 
 @app.route("/admin/download")
@@ -188,9 +167,9 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             return redirect(url_for("home"))
-        else:
-            flash("Invalid credentials")
-            return redirect(url_for("login"))
+
+        flash("Invalid credentials")
+        return redirect(url_for("login"))
 
     return render_template("login.html")
 

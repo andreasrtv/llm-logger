@@ -1,11 +1,13 @@
 # LLM Logger
 ### Interface for conversing with an LLM
-Created with the goal of logging LLM chats along with extra metadata. To be used in our bachelor thesis.
+Created for a bachelor thesis due to our needs.
+
+Extra features which other LLM UIs lack, such as multi-user support, real-time collaboration, note-taking, tagging, and completing chats. Most importantly: allowed us to quickly add features when necessary, and gave us complete control of all data (it's stored locally in an SQLite database).
 
 # Setup
 ## Create `./src/.env` with relevant configging:
 - `SECRET_KEY`: Random secret string for Flask sessions, for example generated with `head -c32 /dev/random | xxd -p`.
-- `MOCK_LLM_RESPONSES`: If set to `true`, all "AI" messages will be the contents of `fake_response.txt` instead of actually calling an API. Useful for debugging/testing/.
+- `MOCK_LLM_RESPONSES`: If set to `true`, all "AI" messages will be the contents of `fake_response.txt` instead of actually calling an API. Useful for debugging/testing.
 
 ### With Azure OpenAI API:
 - `AZURE_OPENAI_API_KEY`: Your API key
@@ -36,7 +38,9 @@ OPENAI_MODEL="o3-mini"
 ## Docker
 Use `docker compose up -d` to run, after creating `./src/.env` file.
 
-**Should not be publicly exposed in any way**, as the application does not implement any form of authorization - all users are admins and anyone can register a user. For our use case we've hosted LLM Logger behind a WireGuard VPN. See the [infra](./infra/README.md) folder for notes regarding our setup.
+**Should not be publicly exposed in any way**, as the application does not implement any form of authorization - all users are admins and anyone can register a user.
+
+For our use case we've hosted LLM Logger on a server, but only exposed it through a WireGuard VPN. See the [infra](./infra/README.md) folder for notes regarding our setup.
 
 
 ## Development
